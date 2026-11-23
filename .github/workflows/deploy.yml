@@ -1,0 +1,33 @@
+name: Deploy to Hosting
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  web-deploy:
+    name: Deploy to Web Hosting via FTP/FTPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Checkout Repository Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: 📂 Sync Files to Hosting Server
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT || 21 }}
+          protocol: ftps # Set to 'ftp' if your host does not support FTPS
+          server-dir: ${{ secrets.FTP_REMOTE_DIR || 'public_html/' }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/*.zip
+            **/*.py
+            **/New-Reservations-Export/**

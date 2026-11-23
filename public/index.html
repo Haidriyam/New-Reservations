@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Review Robot</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ea6c35'><path d='M21 16.5C21 16.88 20.79 17.21 20.47 17.38L12.57 21.82C12.41 21.91 12.23 21.96 12.05 21.96C11.87 21.96 11.69 21.91 11.53 21.82L3.63 17.38C3.31 17.21 3.1 16.88 3.1 16.5V7.5C3.1 7.12 3.31 6.79 3.63 6.62L11.53 2.18C11.85 2 12.25 2 12.57 2.18L20.47 6.62C20.79 6.79 21 7.12 21 7.5V16.5Z'/></svg>">
+</head>
+<body>
+
+  <div class="app-viewport">
+    
+    <!-- ============================================================= -->
+    <!-- 1. AUTH GATEWAY VIEW (Displayed when user is not logged in)   -->
+    <!-- ============================================================= -->
+    <div id="auth-gate-view" class="auth-gate-wrapper">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="auth-logo-badge">
+            <svg viewBox="0 0 24 24" fill="#ffffff" width="30" height="30">
+              <path d="M21 16.5C21 16.88 20.79 17.21 20.47 17.38L12.57 21.82C12.41 21.91 12.23 21.96 12.05 21.96C11.87 21.96 11.69 21.91 11.53 21.82L3.63 17.38C3.31 17.21 3.1 16.88 3.1 16.5V7.5C3.1 7.12 3.31 6.79 3.63 6.62L11.53 2.18C11.85 2 12.25 2 12.57 2.18L20.47 6.62C20.79 6.79 21 7.12 21 7.5V16.5Z"/>
+            </svg>
+          </div>
+          <h1 class="auth-title">Review Robot</h1>
+          <p class="auth-subtitle">Intelligent Review & Order Matching Platform</p>
+        </div>
+
+        <!-- Segmented Tab Switcher -->
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab-btn active" id="btn-gate-tab-login">Sign In</button>
+          <button type="button" class="auth-tab-btn" id="btn-gate-tab-register">Sign Up</button>
+        </div>
+
+        <!-- Sign In Form -->
+        <form id="gate-form-login" class="auth-form-body">
+          <div class="auth-field">
+            <label class="auth-label">Username</label>
+            <div class="auth-input-wrap">
+              <span class="auth-input-icon">👤</span>
+              <input type="text" id="gate-login-username" class="auth-input" placeholder="Enter username" autocomplete="username" required>
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label class="auth-label">Password</label>
+            <div class="auth-input-wrap">
+              <span class="auth-input-icon">🔒</span>
+              <input type="password" id="gate-login-password" class="auth-input" placeholder="Enter password" autocomplete="current-password" required>
+            </div>
+          </div>
+
+          <button type="submit" class="auth-submit-btn" id="gate-login-btn">
+            <span id="gate-login-btn-text">Sign In to Account</span>
+          </button>
+
+          <div class="auth-switch-prompt">
+            Don't have an account? <a href="#" id="link-to-register">Register with Invitation Code</a>
+          </div>
+
+          <div class="auth-demo-divider">
+            <span>OR QUICK DEMO</span>
+          </div>
+          
+          <button type="button" class="auth-demo-btn" id="gate-btn-fill-demo">
+            ⚡ Fill Demo Credentials (demo_user)
+          </button>
+        </form>
+
+        <!-- Sign Up / Register Form -->
+        <form id="gate-form-register" class="auth-form-body" style="display: none;">
+          <div class="auth-field">
+            <label class="auth-label">Username</label>
+            <div class="auth-input-wrap">
+              <span class="auth-input-icon">👤</span>
+              <input type="text" id="gate-reg-username" class="auth-input" placeholder="3-20 characters" autocomplete="username" required>
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label class="auth-label">Password</label>
+            <div class="auth-input-wrap">
+              <span class="auth-input-icon">🔒</span>
+              <input type="password" id="gate-reg-password" class="auth-input" placeholder="At least 6 characters" autocomplete="new-password" required>
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label class="auth-label">Confirm Password</label>
+            <div class="auth-input-wrap">
+              <span class="auth-input-icon">🔒</span>
+              <input type="password" id="gate-reg-confirm-password" class="auth-input" placeholder="Re-enter password" autocomplete="new-password" required>
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label class="auth-label">Invitation Code / VIP Token <span class="required-star">*</span></label>
+            <div class="auth-input-wrap highlight-wrap">
+              <span class="auth-input-icon">🔑</span>
+              <input type="text" id="gate-reg-invite-code" class="auth-input" placeholder="e.g. ROSY88 or VIP2026" required>
+            </div>
+            <div class="auth-field-hint">Invitation code is mandatory. Use an inviter code (e.g. ROSY88) or platform VIP token (VIP2026).</div>
+          </div>
+
+          <div class="auth-field">
+            <label class="auth-label">Withdrawal Security PIN (6 Digits)</label>
+            <div class="auth-input-wrap">
+              <span class="auth-input-icon">🛡️</span>
+              <input type="password" id="gate-reg-pin" class="auth-input" placeholder="6-digit numerical PIN" maxlength="6" value="123456" required>
+            </div>
+          </div>
+
+          <button type="submit" class="auth-submit-btn" id="gate-reg-btn">
+            <span id="gate-reg-btn-text">Create Account & Claim Bonus</span>
+          </button>
+
+          <div class="auth-switch-prompt">
+            Already have an account? <a href="#" id="link-to-login">Sign In</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- 2. INTERNAL APPLICATION (Visible ONLY after Authentication)   -->
+    <!-- ============================================================= -->
+    <div id="app-main-view" class="app-main-view" style="display: none;">
+      
+      <!-- DESKTOP TOP NAVIGATION BAR (Visible on Desktop >= 768px) -->
+      <header class="desktop-nav-header">
+        <div class="desktop-nav-inner">
+          <div class="desktop-logo" onclick="switchTab('index')">
+            <div class="desktop-logo-icon">
+              <svg viewBox="0 0 24 24" fill="#ffffff" width="22" height="22">
+                <path d="M21 16.5C21 16.88 20.79 17.21 20.47 17.38L12.57 21.82C12.41 21.91 12.23 21.96 12.05 21.96C11.87 21.96 11.69 21.91 11.53 21.82L3.63 17.38C3.31 17.21 3.1 16.88 3.1 16.5V7.5C3.1 7.12 3.31 6.79 3.63 6.62L11.53 2.18C11.85 2 12.25 2 12.57 2.18L20.47 6.62C20.79 6.79 21 7.12 21 7.5V16.5Z"/>
+              </svg>
+            </div>
+            <span class="desktop-brand-name">Review Robot</span>
+          </div>
+
+          <nav class="desktop-nav-links">
+            <div class="desktop-nav-item" data-tab="index">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+              Home
+            </div>
+            <div class="desktop-nav-item active" data-tab="trade">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path><circle cx="16" cy="14" r="1"></circle></svg>
+              Trade / Matching
+            </div>
+            <div class="desktop-nav-item" data-tab="order">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+              Orders
+            </div>
+            <div class="desktop-nav-item" data-tab="team">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              Team & Referral
+            </div>
+            <div class="desktop-nav-item" data-tab="personal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              My Account
+            </div>
+          </nav>
+
+          <div class="desktop-user-actions">
+            <div class="desktop-user-pill" onclick="switchTab('personal')">
+              <span class="desktop-user-avatar">👤</span>
+              <div class="desktop-user-meta">
+                <span class="desktop-user-name" id="desktop-header-username">User</span>
+                <span class="desktop-user-balance"><span id="desktop-header-balance">0.00</span> USDT</span>
+              </div>
+            </div>
+            <button class="btn-desktop-recharge" onclick="switchTab('recharge')">
+              💳 Deposit
+            </button>
+            <button class="btn-desktop-logout" id="desktop-btn-logout">
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- MOBILE APP HEADER (Visible only on Mobile < 768px, exact match to video) -->
+      <header class="app-header">
+        <div class="header-left" id="header-back-btn" style="visibility: hidden;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </div>
+        <div class="header-title" id="page-title">Trade</div>
+        <div class="header-right">
+          <div class="menu-dots" style="cursor: pointer;">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Dynamic Content Views -->
+      <main class="app-content">
+
+        <!-- ==================== 1. TRADE VIEW ==================== -->
+        <section id="view-trade" class="app-view">
+          <div class="trade-responsive-grid">
+            
+            <div class="trade-left-col">
+              <div class="trade-balance-card">
+                <div class="balance-title">Account Balance</div>
+                <div class="balance-amount">
+                  <span class="unit">USDT:</span>
+                  <span id="user-balance-val">0.00</span>
+                </div>
+              </div>
+
+              <div class="trade-card-section trade-intro-box">
+                <div class="intro-heading">Transaction introduction</div>
+                <p class="intro-body">
+                  Review Robot uses the feedback of Review Robot every day to display the product that needs to be improved for Review Robot sales. The user only needs to click the order, and the system will automatically generate order signatures. The user pays the order amount through the USDT blockchain support, and can get more than 0.6%commission each time. The system randomly distributes large -scale reward orders.
+                </p>
+              </div>
+            </div>
+
+            <div class="trade-right-col">
+              <div class="trade-card-section trade-action-box">
+                <div class="desktop-trade-heading">
+                  <h3>Order Matching Console</h3>
+                  <span class="live-pulse-badge">● Active</span>
+                </div>
+
+                <div class="divider-line mobile-only-divider"></div>
+
+                <div class="tasks-counter-row">
+                  <div class="counter-item">
+                    <div class="counter-label">Completed number</div>
+                    <div class="counter-value" id="completed-tasks-val">0</div>
+                  </div>
+                  <div class="counter-divider"></div>
+                  <div class="counter-item">
+                    <div class="counter-label">Total task</div>
+                    <div class="counter-value" id="total-tasks-val">60</div>
+                  </div>
+                </div>
+
+                <button class="btn-matching" id="btn-start-matching">
+                  <span id="matching-btn-text">Start matching</span>
+                </button>
+
+                <div class="expected-return-text">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                  Expected return: 0.6%
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================== 2. TEAM VIEW ==================== -->
+        <section id="view-team" class="app-view" style="display: none;">
+          <div class="team-responsive-grid">
+            
+            <div class="team-left-col">
+              <div class="team-balance-card">
+                <div class="team-card-row">
+                  <div class="team-card-col">
+                    <div class="label">Balance</div>
+                    <div class="val" id="team-balance-val">$0.00</div>
+                  </div>
+                  <div class="team-card-divider"></div>
+                  <div class="team-card-col">
+                    <div class="label">Commission</div>
+                    <div class="val" id="team-commission-val">$0.00</div>
+                  </div>
+                </div>
+                <button class="btn-receive" id="btn-receive-commission">Receive</button>
+              </div>
+
+              <div class="invite-share-card">
+                <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 6px;">My Referral Invitation Code</div>
+                <p style="font-size: 12.5px; color: #64748b; margin-bottom: 12px;">Share your personal code with downline team members to receive commissions.</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 14px; border-radius: 8px; border: 1px dashed #ea6c35;">
+                  <span id="my-invite-code-display" style="font-size: 17px; font-weight: 800; color: #ea580c; letter-spacing: 1.5px;">-</span>
+                  <button id="btn-copy-invite" style="padding: 6px 14px; font-size: 13px; font-weight: 600; background: #ea6c35; color: #fff; border: none; border-radius: 6px; cursor: pointer;">Copy Code</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="team-right-col">
+              <div class="team-list-card">
+                <div class="total-people-title">
+                  Total people <strong id="total-people-val">0</strong>
+                </div>
+
+                <table class="team-table">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Number of contributions</th>
+                      <th>State</th>
+                    </tr>
+                  </thead>
+                  <tbody id="team-table-body">
+                    <tr>
+                      <td colspan="3" style="color: #9ca3af; padding: 24px;">No referrals yet</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================== 3. RECHARGE VIEW ==================== -->
+        <section id="view-recharge" class="app-view" style="display: none;">
+          <div class="recharge-responsive-grid">
+            
+            <div class="recharge-left-col">
+              <div class="recharge-card">
+                <div class="recharge-card-header">
+                  <div class="tether-badge">₮</div>
+                  <span>TRC-20</span>
+                </div>
+
+                <div class="recharge-instruction">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#3b82f6" style="flex-shrink: 0; margin-top: 1px;">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                  </svg>
+                  <span id="recharge-instruction-text">
+                    The deposit address only supports TRC20-USDT, and the minimum deposit amount is 20USDT
+                  </span>
+                </div>
+
+                <div class="recharge-qr-container">
+                  <div class="qr-box">
+                    <img id="recharge-qr-img" src="" alt="TRC20 USDT Deposit QR Code">
+                  </div>
+                </div>
+
+                <div class="address-input-box">
+                  <div class="address-text-field" id="recharge-address-text">
+                    Loading address...
+                  </div>
+                  <button class="btn-copy-address" id="btn-copy-address">Copy</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="recharge-right-col">
+              <div style="background: #fff; padding: 22px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #111827;">Submit Deposit Voucher</h3>
+                <div class="form-group">
+                  <label class="form-label">Deposit Amount (USDT)</label>
+                  <input type="number" id="deposit-amount-input" class="form-input" placeholder="Min. 20 USDT" min="20">
+                </div>
+                <div class="quick-amount-chips">
+                  <button type="button" class="amount-chip" onclick="setRechargeAmount(50)">50 USDT</button>
+                  <button type="button" class="amount-chip" onclick="setRechargeAmount(100)">100 USDT</button>
+                  <button type="button" class="amount-chip" onclick="setRechargeAmount(200)">200 USDT</button>
+                  <button type="button" class="amount-chip" onclick="setRechargeAmount(500)">500 USDT</button>
+                  <button type="button" class="amount-chip" onclick="setRechargeAmount(1000)">1000 USDT</button>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Transaction Hash (TXID) [Optional]</label>
+                  <input type="text" id="deposit-txid-input" class="form-input" placeholder="Paste your blockchain transaction hash">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Transfer Receipt Screenshot [Optional]</label>
+                  <input type="file" id="deposit-proof-file" accept="image/*" class="form-input" style="padding: 8px;">
+                </div>
+                <button class="btn-i-recharged" id="btn-i-recharged">I have recharged</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================== 4. ORDER VIEW ==================== -->
+        <section id="view-order" class="app-view" style="display: none;">
+          <div class="order-responsive-container">
+            <!-- Sub-tabs -->
+            <div class="order-subtab-bar">
+              <button class="order-subtab active" data-sub="all">All Orders</button>
+              <button class="order-subtab" data-sub="unprepared">Unprepared Orders</button>
+              <button class="order-subtab" data-sub="completed">Completed Orders</button>
+            </div>
+
+            <div id="orders-list-container" class="orders-grid-list">
+              <!-- Dynamically populated orders -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 5. INDEX / HOME VIEW ==================== -->
+        <section id="view-index" class="app-view" style="display: none;">
+          <div class="index-responsive-container">
+            <!-- Hero Banner -->
+            <div class="hero-banner-card">
+              <div class="hero-banner-content">
+                <h2>Review Robot</h2>
+                <p>Global intelligent e-commerce feedback platform. Earn guaranteed USDT returns daily through automatic review matching.</p>
+                <button class="btn-hero-trade" onclick="switchTab('trade')">Start Matching Now ›</button>
+              </div>
+            </div>
+
+            <!-- Real-time Rolling Ticker -->
+            <div class="rolling-live-ticker">
+              <span class="live-pill">LIVE</span>
+              <div id="rolling-ticker-text" class="ticker-content">
+                User 92*** earned +18.94 USDT from Lucky Order
+              </div>
+            </div>
+
+            <!-- VIP Levels Matrix -->
+            <div class="vip-matrix-card">
+              <div class="vip-matrix-title">Membership Level Benefits</div>
+              <div class="vip-tiers-grid">
+                <div class="vip-tier-item tier-vip1">
+                  <div>
+                    <strong class="tier-name">VIP 1</strong>
+                    <div class="tier-quota">Daily Quota: 60 Tasks</div>
+                  </div>
+                  <div class="tier-comm">0.6% Comm.</div>
+                </div>
+                <div class="vip-tier-item tier-vip2">
+                  <div>
+                    <strong class="tier-name">VIP 2</strong>
+                    <div class="tier-quota">Daily Quota: 70 Tasks</div>
+                  </div>
+                  <div class="tier-comm">0.8% Comm.</div>
+                </div>
+                <div class="vip-tier-item tier-vip3">
+                  <div>
+                    <strong class="tier-name">VIP 3</strong>
+                    <div class="tier-quota">Daily Quota: 80 Tasks</div>
+                  </div>
+                  <div class="tier-comm">1.0% Comm.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 6. PERSONAL / PROFILE VIEW ==================== -->
+        <section id="view-personal" class="app-view" style="display: none;">
+          <div class="personal-responsive-grid">
+            
+            <div class="personal-left-col">
+              <div class="profile-summary-card">
+                <div class="profile-header-meta">
+                  <div class="profile-avatar-circle">👤</div>
+                  <div>
+                    <div class="profile-name" id="profile-username">User</div>
+                    <div class="profile-invite">Invitation Code: <strong id="profile-invite-code">-</strong></div>
+                  </div>
+                </div>
+
+                <div class="profile-balances-row">
+                  <div>
+                    <div class="bal-label">Available Balance</div>
+                    <div class="bal-val"><span id="profile-balance">0.00</span> <small>USDT</small></div>
+                  </div>
+                  <div>
+                    <div class="bal-label">Frozen Balance</div>
+                    <div class="bal-val"><span id="profile-frozen">0.00</span> <small>USDT</small></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="personal-right-col">
+              <div class="profile-menu-card">
+                <div class="menu-item-row" id="menu-btn-recharge">
+                  <span>💳 Deposit / Recharge USDT</span>
+                  <span>›</span>
+                </div>
+                <div class="menu-item-row" id="menu-btn-withdraw">
+                  <span>💸 Apply for Withdrawal</span>
+                  <span>›</span>
+                </div>
+                <div class="menu-item-row" id="menu-btn-trc20">
+                  <span>🔗 Bind Receiving TRC-20 Address</span>
+                  <span>›</span>
+                </div>
+                <div class="menu-item-row" id="menu-btn-support">
+                  <span>💬 24/7 Online Customer Service</span>
+                  <span>›</span>
+                </div>
+                <div class="menu-item-row" id="menu-btn-logout" style="color: #ef4444; border-bottom: none;">
+                  <span>🚪 Sign Out</span>
+                  <span>›</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================== 7. WITHDRAWAL VIEW ==================== -->
+        <section id="view-withdraw" class="app-view" style="display: none;">
+          <div class="withdraw-responsive-container">
+            <div style="background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); max-width: 540px; margin: 0 auto;">
+              <div style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Apply for USDT Withdrawal</div>
+              <div class="form-group">
+                <label class="form-label">Available Balance</label>
+                <div style="font-size: 22px; font-weight: 700; color: #ea580c; margin-bottom: 8px;" id="withdraw-available-bal">0.00 USDT</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Withdrawal Amount (USDT)</label>
+                <input type="number" id="withdraw-amount-input" class="form-input" placeholder="Min 30 USDT" min="30">
+              </div>
+              <div class="form-group">
+                <label class="form-label">USDT TRC-20 Receiving Address</label>
+                <input type="text" id="withdraw-address-input" class="form-input" placeholder="Enter or verify your TRC20 address">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Withdrawal Security PIN</label>
+                <input type="password" id="withdraw-pin-input" class="form-input" placeholder="Default: 123456" maxlength="6">
+              </div>
+              <button class="btn-i-recharged" id="btn-submit-withdraw" style="margin-top: 10px;">Submit Withdrawal Request</button>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- MOBILE BOTTOM 5-TAB NAVIGATION (Visible only on Mobile < 768px, exact match to video) -->
+      <nav class="bottom-nav">
+        <div class="nav-tab" data-tab="index">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span>Index</span>
+        </div>
+
+        <div class="nav-tab" data-tab="order">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+          <span>Order</span>
+        </div>
+
+        <div class="nav-tab active" data-tab="trade">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
+            <path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path>
+            <circle cx="16" cy="14" r="1"></circle>
+          </svg>
+          <span>Trade</span>
+        </div>
+
+        <div class="nav-tab" data-tab="team">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>Team</span>
+        </div>
+
+        <div class="nav-tab" data-tab="personal">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Personal</span>
+        </div>
+      </nav>
+
+      <!-- ==================== MODALS ==================== -->
+
+      <!-- 1. Normal Matched Order Dialog -->
+      <div class="modal-overlay" id="modal-matched-order">
+        <div class="order-dialog">
+          <div class="dialog-product-header">
+            <div class="dialog-product-title" id="matched-product-title">Product Title</div>
+            <img class="dialog-product-img" id="matched-product-img" src="" alt="Product">
+          </div>
+          <div class="dialog-price-row">
+            <div class="dialog-price-val" id="matched-price-val">0.00</div>
+            <div class="dialog-qty">x1</div>
+          </div>
+          <div class="dialog-dashed-line"></div>
+          <div class="dialog-meta-row">
+            <span class="label">Expected return</span>
+            <span class="val-orange" id="matched-return-val">0.00</span>
+          </div>
+          <div class="dialog-meta-row">
+            <span class="label">Amount</span>
+            <span class="val" id="matched-amount-val">0.00</span>
+          </div>
+          <div class="dialog-meta-row">
+            <span class="label">Transaction hour</span>
+            <span class="val" id="matched-hour-val">2026-11-21 00:00:00</span>
+          </div>
+          <div class="dialog-actions">
+            <button class="btn-cancel" id="btn-cancel-trading">Cancel</button>
+            <button class="btn-trade" id="btn-start-trading">Start trading</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Lucky Order Alert Dialog (From Video 1) -->
+      <div class="modal-overlay" id="modal-lucky-order">
+        <div class="lucky-order-dialog">
+          <div class="lucky-title">Prompt</div>
+          <div class="lucky-prompt-text">
+            Insufficient balance, please recharge first. (Still need <span class="highlight" id="lucky-diff-val">114.64</span>USDT)
+          </div>
+          <div class="dialog-dashed-line"></div>
+          <div class="dialog-meta-row">
+            <span class="label">Expected return</span>
+            <span class="val-orange" id="lucky-return-val">18.94</span>
+          </div>
+          <div class="dialog-meta-row">
+            <span class="label">Amount</span>
+            <span class="val" id="lucky-amount-val">315.72</span>
+          </div>
+          <div class="dialog-meta-row">
+            <span class="label">Transaction hour</span>
+            <span class="val" id="lucky-hour-val">2026-11-21 03:06:54</span>
+          </div>
+          <div class="lucky-actions">
+            <button class="btn-lucky-cancel" id="btn-lucky-cancel">Cancel</button>
+            <button class="btn-lucky-confirm" id="btn-lucky-confirm">Confirm</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Unfinished Order Alert Dialog (From Video 2) -->
+      <div class="modal-overlay" id="modal-unfinished-order">
+        <div class="lucky-order-dialog">
+          <div style="font-size: 16px; font-weight: 700; color: #111827; text-align: center; margin: 10px 0 20px 0; line-height: 1.45;">
+            You still have unfinished orders, whether to jump to the unprepared order page
+          </div>
+          <div class="lucky-actions">
+            <button class="btn-lucky-cancel" id="btn-unfinished-cancel">Cancel</button>
+            <button class="btn-lucky-confirm" id="btn-unfinished-confirm">Confirm</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. "Successful operation" Toast (Matches video exactly) -->
+      <div class="toast-success-overlay" id="toast-success">
+        <div class="toast-box">
+          <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <div class="toast-text">Successful o<br>peration</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

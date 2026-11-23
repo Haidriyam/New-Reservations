@@ -1,0 +1,33 @@
+{
+  "name": "cool-hypatia",
+  "version": "1.0.0",
+  "description": "A full-stack ecosystem featuring: - **Android App**: Native Jetpack Compose 3D/AI custom fishing lure configurator with Cloudflare Workers AI & Pollinations AI generation, real-time Firebase syncing, full catalog browsing, and cart ordering. - **Web Admin Dashboard**: Real-time management portal to control announcements, promotions, live orders, catalog products, and pricing that updates the Android app instantly without requiring an app store update.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Haidriyam/7Hooks-10-07-2026.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Haidriyam/7Hooks-10-07-2026/issues"
+  },
+  "homepage": "https://github.com/Haidriyam/7Hooks-10-07-2026#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.5.0",
+    "qrcode": "^1.5.4"
+  }
+}

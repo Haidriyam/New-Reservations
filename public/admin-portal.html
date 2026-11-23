@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Master Control Portal - Review Robot HQ</title>
+  <link rel="stylesheet" href="admin.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ef4444'><circle cx='12' cy='12' r='10'/></svg>">
+</head>
+<body>
+
+  <!-- ADMIN LOGIN VIEW -->
+  <div id="admin-login-view" style="display: flex; min-height: 100vh; align-items: center; justify-content: center; background: #0b1120;">
+    <div style="width: 100%; max-width: 400px; background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 22px;">
+        <div style="width: 42px; height: 42px; background: #ea580c; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">🛡️</div>
+        <div>
+          <h2 style="font-size: 18px; font-weight: 700; color: #fff;">HQ Control Portal</h2>
+          <p style="font-size: 12px; color: #94a3b8;">Role-Based Administration Access</p>
+        </div>
+      </div>
+
+      <form id="form-admin-login">
+        <div class="admin-form-group">
+          <label class="admin-form-label">Admin Username</label>
+          <input type="text" id="admin-username-input" class="admin-form-input" placeholder="admin" value="admin" required>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Admin Password</label>
+          <input type="password" id="admin-password-input" class="admin-form-input" placeholder="••••••••••••" value="Admin@2026!Master" required>
+        </div>
+        <button type="submit" class="btn-sm btn-primary-sm" style="width: 100%; height: 44px; font-size: 14.5px; font-weight: 700; margin-top: 12px;">
+          Authenticate & Sign In
+        </button>
+      </form>
+
+      <div style="margin-top: 18px; padding-top: 16px; border-top: 1px dashed #334155; font-size: 11.5px; color: #64748b; line-height: 1.5;">
+        <strong>Demo RBAC Accounts:</strong><br>
+        • Superadmin: <code>admin</code> / <code>Admin@2026!Master</code><br>
+        • Operations: <code>ops_manager</code> / <code>Manager@2026!Pass</code><br>
+        • Finance: <code>finance_lead</code> / <code>Finance@2026!Pass</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN APP DASHBOARD -->
+  <div class="admin-layout" id="admin-dashboard-view" style="display: none;">
+    
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-header">
+        <h2>Review Robot</h2>
+        <span class="badge" id="admin-sidebar-role-badge">SUPERADMIN</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-link active" data-section="overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Overview
+        </div>
+        <div class="nav-link" data-section="users">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Users Management
+        </div>
+        <div class="nav-link" data-section="invite-codes">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          Code & Token Generator
+        </div>
+        <div class="nav-link" data-section="lucky-orders">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          Lucky Orders Injector
+        </div>
+        <div class="nav-link" data-section="recharges">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          Recharge Approvals
+        </div>
+        <div class="nav-link" data-section="withdrawals">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          Withdrawal Requests
+        </div>
+        <div class="nav-link" data-section="products">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          Products Catalog
+        </div>
+        <div class="nav-link" data-section="admins" id="nav-item-admins">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          Admin Team & RBAC
+        </div>
+        <div class="nav-link" data-section="settings" id="nav-item-settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          System Settings
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn-admin-logout" id="btn-admin-logout">Sign Out</button>
+      </div>
+    </aside>
+
+    <!-- Main Section -->
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <h1 class="admin-title" id="admin-page-title">Dashboard Overview</h1>
+        <div class="admin-user-info">
+          <span>Logged in as: <strong style="color: #fff;" id="admin-user-name">admin</strong> (<span id="admin-user-role-label">superadmin</span>)</span>
+          <a href="/" target="_blank" style="padding: 4px 10px; background: #334155; color: #fff; font-size: 12px; border-radius: 4px; text-decoration: none;">View Site ↗</a>
+        </div>
+      </header>
+
+      <div class="admin-content">
+
+        <!-- 1. OVERVIEW -->
+        <section id="sec-overview" class="admin-section">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">TOTAL REGISTERED USERS</div>
+              <div class="stat-value" id="stat-total-users">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">TOTAL USER BALANCES</div>
+              <div class="stat-value"><span id="stat-total-balance">0.00</span> <span style="font-size: 15px; color: #ea580c;">USDT</span></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">PENDING RECHARGES</div>
+              <div class="stat-value" id="stat-pending-recharges" style="color: #f59e0b;">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">PENDING WITHDRAWALS</div>
+              <div class="stat-value" id="stat-pending-withdrawals" style="color: #ef4444;">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">COMPLETED ORDERS</div>
+              <div class="stat-value" id="stat-completed-orders">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">ACTIVE LUCKY TRIGGERS</div>
+              <div class="stat-value" id="stat-active-lucky">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">ACTIVE VIP TOKENS</div>
+              <div class="stat-value" id="stat-active-tokens" style="color: #38bdf8;">0</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. USERS MANAGEMENT (Add / Delete / Adjust) -->
+        <section id="sec-users" class="admin-section" style="display: none;">
+          <div class="card-table-wrapper">
+            <div class="card-table-header">
+              <h3>Registered Users & Task Controls</h3>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn-sm btn-success-sm" onclick="openAddUserModal()">+ Add New User</button>
+                <button class="btn-sm btn-primary-sm" onclick="loadUsersTable()">Refresh</button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>UID</th>
+                    <th>Username</th>
+                    <th>Balance</th>
+                    <th>Tasks</th>
+                    <th>Invite Code</th>
+                    <th>Invited By</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-table-body">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. INVITATION CODES & TOKENS GENERATOR -->
+        <section id="sec-invite-codes" class="admin-section" style="display: none;">
+          <div style="background: var(--admin-card); border: 1px solid var(--admin-card-border); border-radius: 12px; padding: 22px; margin-bottom: 24px;">
+            <h3 style="font-size: 16px; font-weight: 700; color: #38bdf8; margin-bottom: 8px;">🔑 Generate Invitation Codes & VIP Tokens</h3>
+            <p style="font-size: 13px; color: var(--admin-text-muted); margin-bottom: 16px;">
+              Create single custom VIP codes or batch generate tokens. Users can use these codes to register on the platform and automatically receive starting trial bonuses.
+            </p>
+
+            <form id="form-generate-codes">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Custom Code (Optional, leave blank for random)</label>
+                  <input type="text" id="gen-custom-code" class="admin-form-input" placeholder="e.g. VIP2026, SUPER88">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Batch Count (If random)</label>
+                  <input type="number" id="gen-batch-count" class="admin-form-input" value="1" min="1" max="50">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Starting Bonus Balance (USDT)</label>
+                  <input type="number" id="gen-bonus-bal" class="admin-form-input" value="200" step="0.01">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Max Allowed Uses (0 = Unlimited)</label>
+                  <input type="number" id="gen-max-uses" class="admin-form-input" value="1" min="0">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Assigned VIP Level</label>
+                  <select id="gen-vip-level" class="admin-form-select">
+                    <option value="1">VIP 1 (60 tasks, 0.6%)</option>
+                    <option value="2">VIP 2 (70 tasks, 0.8%)</option>
+                    <option value="3">VIP 3 (80 tasks, 1.0%)</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn-sm btn-primary-sm" style="height: 42px; padding: 0 22px; font-size: 14px; margin-top: 10px;">
+                ✨ Generate Code(s) Now
+              </button>
+            </form>
+          </div>
+
+          <div class="card-table-wrapper">
+            <div class="card-table-header">
+              <h3>Active & Configured Invite Codes</h3>
+              <button class="btn-sm btn-primary-sm" onclick="loadInviteCodesTable()">Refresh Codes</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Bonus Balance</th>
+                    <th>Usage (Used / Max)</th>
+                    <th>VIP Tier</th>
+                    <th>Created By</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-codes-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. LUCKY ORDERS INJECTOR -->
+        <section id="sec-lucky-orders" class="admin-section" style="display: none;">
+          <div style="background: var(--admin-card); border: 1px solid var(--admin-card-border); border-radius: 12px; padding: 22px; margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div>
+                <h3 style="font-size: 16px; font-weight: 700; color: #ea580c;">✨ Inject Lucky Order into User</h3>
+                <p style="font-size: 13px; color: var(--admin-text-muted);">
+                  Create an order matching trigger with an amount higher than user's balance to trigger the "Insufficient balance, please recharge first" prompt.
+                </p>
+              </div>
+            </div>
+
+            <form id="form-inject-lucky-order">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Target User</label>
+                  <select id="lucky-target-user-select" class="admin-form-select" required></select>
+                </div>
+
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Trigger Condition</label>
+                  <select id="lucky-trigger-type" class="admin-form-select">
+                    <option value="next">On Next "Start Matching" Click</option>
+                    <option value="task_number">When reaching Task #</option>
+                  </select>
+                </div>
+
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Task Number (If specific)</label>
+                  <input type="number" id="lucky-target-task-num" class="admin-form-input" value="20">
+                </div>
+
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Order Amount (USDT)</label>
+                  <input type="number" id="lucky-amount-input" class="admin-form-input" value="315.72" step="0.01" required>
+                </div>
+
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Expected Return (USDT)</label>
+                  <input type="number" id="lucky-return-input" class="admin-form-input" value="18.94" step="0.01" required>
+                </div>
+
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Product Name</label>
+                  <input type="text" id="lucky-prod-name-input" class="admin-form-input" value="Sony PlayStation 5 Pro & PS VR2 Master Combo Bundle">
+                </div>
+              </div>
+
+              <button type="submit" class="btn-sm btn-primary-sm" style="height: 42px; padding: 0 24px; font-size: 14px; margin-top: 10px;">
+                ⚡ Inject Lucky Order Now
+              </button>
+            </form>
+          </div>
+
+          <div class="card-table-wrapper">
+            <div class="card-table-header">
+              <h3>Active Lucky Order Queue</h3>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Trigger</th>
+                    <th>Order Amount</th>
+                    <th>Expected Return</th>
+                    <th>User Balance</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-lucky-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. RECHARGE APPROVALS -->
+        <section id="sec-recharges" class="admin-section" style="display: none;">
+          <div class="card-table-wrapper">
+            <div class="card-table-header">
+              <h3>USDT TRC-20 Recharge Requests</h3>
+              <button class="btn-sm btn-primary-sm" onclick="loadRechargesTable()">Refresh</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Amount</th>
+                    <th>TXID</th>
+                    <th>Proof</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-recharge-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. WITHDRAWAL REQUESTS -->
+        <section id="sec-withdrawals" class="admin-section" style="display: none;">
+          <div class="card-table-wrapper">
+            <div class="card-table-header">
+              <h3>USDT Withdrawal Requests</h3>
+              <button class="btn-sm btn-primary-sm" onclick="loadWithdrawalsTable()">Refresh</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Amount</th>
+                    <th>Destination TRC-20 Address</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-withdrawals-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. PRODUCTS CATALOG (With PS5, iPhones, etc.) -->
+        <section id="sec-products" class="admin-section" style="display: none;">
+          <div style="background: var(--admin-card); border: 1px solid var(--admin-card-border); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h3 style="font-size: 15px; margin-bottom: 14px;">Add New Product to Review Pool</h3>
+            <form id="form-add-product" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Product Name</label>
+                <input type="text" id="prod-name-in" class="admin-form-input" placeholder="e.g. Sony PlayStation 5 Pro" required>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Price (USDT)</label>
+                <input type="number" id="prod-price-in" class="admin-form-input" placeholder="699.99" step="0.01" required>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Commission Rate</label>
+                <input type="number" id="prod-comm-in" class="admin-form-input" placeholder="0.006" value="0.006" step="0.001">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Category</label>
+                <input type="text" id="prod-cat-in" class="admin-form-input" placeholder="Gaming, Electronics, etc.">
+              </div>
+              <div class="admin-form-group" style="grid-column: 1 / -1;">
+                <label class="admin-form-label">Image URL</label>
+                <input type="text" id="prod-img-in" class="admin-form-input" placeholder="https://..." required>
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <button type="submit" class="btn-sm btn-primary-sm" style="height: 38px; padding: 0 20px;">Save Product</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card-table-wrapper">
+            <div class="card-table-header">
+              <h3>Existing Review Products (Catalog Pool)</h3>
+              <button class="btn-sm btn-primary-sm" onclick="loadProductsTable()">Refresh Catalog</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Image</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Commission Rate</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-products-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. ADMIN TEAM & RBAC MANAGEMENT -->
+        <section id="sec-admins" class="admin-section" style="display: none;">
+          <div style="background: var(--admin-card); border: 1px solid var(--admin-card-border); border-radius: 12px; padding: 22px; margin-bottom: 24px;">
+            <h3 style="font-size: 16px; font-weight: 700; color: #a855f7; margin-bottom: 8px;">🛡️ Admin Accounts & Role-Based Access Control (RBAC)</h3>
+            <p style="font-size: 13px; color: var(--admin-text-muted); margin-bottom: 16px;">
+              Manage administrative staff with granular permissions: <strong>Superadmin</strong> (Master access), <strong>Manager</strong> (Users, codes & operations), or <strong>Finance</strong> (Recharge & withdrawal approvals only).
+            </p>
+
+            <form id="form-add-admin">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Username</label>
+                  <input type="text" id="admin-new-username" class="admin-form-input" placeholder="e.g. audit_agent" required>
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Password</label>
+                  <input type="password" id="admin-new-password" class="admin-form-input" placeholder="Min 6 characters" required>
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Assigned Role</label>
+                  <select id="admin-new-role" class="admin-form-select">
+                    <option value="manager">Manager (User & Order Controls)</option>
+                    <option value="finance">Finance (Deposits & Withdrawals)</option>
+                    <option value="superadmin">Superadmin (Full Master Access)</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn-sm btn-primary-sm" style="height: 42px; padding: 0 22px; font-size: 14px; margin-top: 10px;">
+                + Create Admin Account
+              </button>
+            </form>
+          </div>
+
+          <div class="card-table-wrapper">
+            <div class="card-table-header">
+              <h3>Admin Team Roster</h3>
+              <button class="btn-sm btn-primary-sm" onclick="loadAdminsTable()">Refresh</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>UID</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Created Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-roster-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9. SYSTEM SETTINGS -->
+        <section id="sec-settings" class="admin-section" style="display: none;">
+          <div style="background: var(--admin-card); border: 1px solid var(--admin-card-border); border-radius: 12px; padding: 22px; max-width: 650px;">
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Platform Settings</h3>
+            <form id="form-admin-settings">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Platform Title</label>
+                <input type="text" id="set-platform-title" class="admin-form-input">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">System TRC-20 Deposit Wallet Address (Shows on recharge page)</label>
+                <input type="text" id="set-deposit-addr" class="admin-form-input" style="font-family: monospace;">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Default Daily Tasks</label>
+                <input type="number" id="set-daily-tasks" class="admin-form-input">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Min Deposit (USDT)</label>
+                <input type="number" id="set-min-dep" class="admin-form-input">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Min Withdrawal (USDT)</label>
+                <input type="number" id="set-min-with" class="admin-form-input">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Telegram Customer Service Link</label>
+                <input type="text" id="set-tg-url" class="admin-form-input">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Hidden Admin Route Path (e.g. /secret-admin-portal-xyz)</label>
+                <input type="text" id="set-admin-path" class="admin-form-input">
+              </div>
+              <button type="submit" class="btn-sm btn-primary-sm" style="height: 42px; padding: 0 24px; font-size: 14px; margin-top: 10px;">
+                Save System Settings
+              </button>
+            </form>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ACTION MODALS -->
+  <!-- 1. Add User Modal -->
+  <div class="admin-modal-overlay" id="modal-add-user">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <span>+ Add New User</span>
+        <button onclick="closeModal('modal-add-user')" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <form id="form-create-user-modal">
+        <div class="admin-form-group">
+          <label class="admin-form-label">Username</label>
+          <input type="text" id="newuser-name" class="admin-form-input" placeholder="Enter username" required>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Password</label>
+          <input type="password" id="newuser-pass" class="admin-form-input" placeholder="Password (min 6 chars)" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="admin-form-group">
+            <label class="admin-form-label">Initial Balance (USDT)</label>
+            <input type="number" id="newuser-bal" class="admin-form-input" value="200" step="0.01">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Daily Task Limit</label>
+            <input type="number" id="newuser-tasks" class="admin-form-input" value="60">
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="admin-form-group">
+            <label class="admin-form-label">VIP Tier</label>
+            <select id="newuser-vip" class="admin-form-select">
+              <option value="1">VIP 1</option>
+              <option value="2">VIP 2</option>
+              <option value="3">VIP 3</option>
+            </select>
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Withdrawal PIN</label>
+            <input type="password" id="newuser-pin" class="admin-form-input" value="123456" maxlength="6">
+          </div>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Custom Invite Code (Leave blank to auto-generate)</label>
+          <input type="text" id="newuser-code" class="admin-form-input" placeholder="e.g. VIP888">
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Inviter Code (Optional)</label>
+          <input type="text" id="newuser-inviter" class="admin-form-input" placeholder="e.g. ROSY88">
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-sm btn-secondary-sm" onclick="closeModal('modal-add-user')">Cancel</button>
+          <button type="submit" class="btn-sm btn-success-sm">Create User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Balance Edit Modal -->
+  <div class="admin-modal-overlay" id="modal-adjust-balance">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <span>Adjust User Balance</span>
+        <button onclick="closeModal('modal-adjust-balance')" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <div class="admin-form-group">
+        <label class="admin-form-label">Target User: <strong id="bal-modal-user" style="color: #ea580c;">-</strong></label>
+        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Current Balance: <span id="bal-modal-current">0.00</span> USDT</div>
+      </div>
+      <div class="admin-form-group">
+        <label class="admin-form-label">Amount to Add or Subtract (+50 or -50)</label>
+        <input type="number" id="bal-modal-amount" class="admin-form-input" placeholder="e.g. 100 or -50" step="0.01" required>
+      </div>
+      <div class="admin-modal-footer">
+        <button class="btn-sm btn-secondary-sm" onclick="closeModal('modal-adjust-balance')">Cancel</button>
+        <button class="btn-sm btn-primary-sm" id="btn-confirm-adjust-bal">Confirm Adjustment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Task Count Edit Modal -->
+  <div class="admin-modal-overlay" id="modal-adjust-tasks">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <span>Adjust Task Progress</span>
+        <button onclick="closeModal('modal-adjust-tasks')" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <div class="admin-form-group">
+        <label class="admin-form-label">Target User: <strong id="task-modal-user" style="color: #ea580c;">-</strong></label>
+      </div>
+      <div class="admin-form-group">
+        <label class="admin-form-label">Completed Tasks Count</label>
+        <input type="number" id="task-modal-completed" class="admin-form-input" placeholder="0" min="0">
+      </div>
+      <div class="admin-form-group">
+        <label class="admin-form-label">Max Daily Tasks Limit</label>
+        <input type="number" id="task-modal-max" class="admin-form-input" placeholder="60" min="1">
+      </div>
+      <div class="admin-modal-footer">
+        <button class="btn-sm btn-secondary-sm" onclick="closeModal('modal-adjust-tasks')">Cancel</button>
+        <button class="btn-sm btn-primary-sm" id="btn-confirm-adjust-tasks">Save Progress</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
