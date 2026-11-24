@@ -23,7 +23,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT || 21 }}
           protocol: ftp
-          server-dir: ${{ secrets.FTP_REMOTE_DIR || '/home1/hlyuspmy/public_html/website_1b09a9d6/' }}
+          server-dir: ./
           exclude: |
             **/.git*
             **/.git*/**
