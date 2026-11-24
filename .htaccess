@@ -6,23 +6,27 @@ DirectoryIndex public/index.html index.html index.php
   RewriteEngine On
   RewriteBase /
 
-  # 1. Secret Admin Portal Route
+  # 1. Route all API requests directly to the native PHP API engine
+  RewriteRule ^api/(.*)$ api.php [L,QSA]
+  RewriteRule ^api$ api.php [L,QSA]
+
+  # 2. Secret Admin Portal Route
   RewriteRule ^secret-admin-portal-xyz/?$ public/admin-portal.html [L,QSA]
 
-  # 2. Transparently route root request to public/index.html
+  # 3. Transparently route root request to public/index.html
   RewriteRule ^$ public/index.html [L]
 
-  # 3. Transparently serve static assets from public/ folder
+  # 4. Transparently serve static assets from public/ folder
   RewriteCond %{DOCUMENT_ROOT}/public/$1 -f [OR]
   RewriteCond %{DOCUMENT_ROOT}/public/$1 -d
   RewriteCond %{REQUEST_URI} !^/public/
   RewriteRule ^(.*)$ public/$1 [L,QSA]
 
-  # 4. Fallback for client-side routing
+  # 5. Fallback for client-side routing
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !^/public/
-  RewriteCond %{REQUEST_URI} !^/api/
+  RewriteCond %{REQUEST_URI} !^/api
   RewriteRule ^(.*)$ public/index.html [L]
 </IfModule>
 
