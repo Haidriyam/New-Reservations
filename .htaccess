@@ -1,0 +1,30 @@
+# Review Robot - Production Apache Configuration for Bluehost / cPanel
+
+DirectoryIndex public/index.html index.html index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Secret Admin Portal Route
+  RewriteRule ^secret-admin-portal-xyz/?$ public/admin-portal.html [L,QSA]
+
+  # 2. Transparently route root request to public/index.html
+  RewriteRule ^$ public/index.html [L]
+
+  # 3. Transparently serve static assets from public/ folder
+  RewriteCond %{DOCUMENT_ROOT}/public/$1 -f [OR]
+  RewriteCond %{DOCUMENT_ROOT}/public/$1 -d
+  RewriteCond %{REQUEST_URI} !^/public/
+  RewriteRule ^(.*)$ public/$1 [L,QSA]
+
+  # 4. Fallback for client-side routing
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !^/public/
+  RewriteCond %{REQUEST_URI} !^/api/
+  RewriteRule ^(.*)$ public/index.html [L]
+</IfModule>
+
+# Prevent 403 Forbidden directory listing error
+Options -Indexes +FollowSymLinks
