@@ -7,7 +7,7 @@ on:
 
 jobs:
   web-deploy:
-    name: Deploy to Web Hosting via FTP/FTPS
+    name: Deploy to Web Hosting via FTP
     runs-on: ubuntu-latest
     steps:
       - name: 🚚 Checkout Repository Code
@@ -18,12 +18,12 @@ jobs:
       - name: 📂 Sync Files to Hosting Server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
+          server: ${{ secrets.FTP_SERVER || 'new.reserve-hotels.online' }}
+          username: ${{ secrets.FTP_USERNAME || 'Admin1@new.reserve-hotels.online' }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT || 21 }}
-          protocol: ftps # Set to 'ftp' if your host does not support FTPS
-          server-dir: ${{ secrets.FTP_REMOTE_DIR || 'public_html/' }}
+          protocol: ftp
+          server-dir: ${{ secrets.FTP_REMOTE_DIR || '/home1/hlyuspmy/public_html/website_1b09a9d6/' }}
           exclude: |
             **/.git*
             **/.git*/**
