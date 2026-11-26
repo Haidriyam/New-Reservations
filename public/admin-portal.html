@@ -541,14 +541,18 @@
           <label class="admin-form-label">Password</label>
           <input type="password" id="newuser-pass" class="admin-form-input" placeholder="Password (min 6 chars)" required>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
           <div class="admin-form-group">
             <label class="admin-form-label">Initial Balance (USDT)</label>
-            <input type="number" id="newuser-bal" class="admin-form-input" value="200" step="0.01">
+            <input type="number" id="newuser-bal" class="admin-form-input" value="0.00" step="0.01">
           </div>
           <div class="admin-form-group">
             <label class="admin-form-label">Daily Task Limit</label>
             <input type="number" id="newuser-tasks" class="admin-form-input" value="60">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Max Profit ($USD)</label>
+            <input type="number" id="newuser-maxprofit" class="admin-form-input" value="10.00" step="0.01">
           </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -585,45 +589,62 @@
   <div class="admin-modal-overlay" id="modal-adjust-balance">
     <div class="admin-modal-box">
       <div class="admin-modal-header">
-        <span>Adjust User Balance</span>
+        <span>Adjust User Balance (Increase / Decrease / Negative)</span>
         <button onclick="closeModal('modal-adjust-balance')" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
       </div>
       <div class="admin-form-group">
         <label class="admin-form-label">Target User: <strong id="bal-modal-user" style="color: #ea580c;">-</strong></label>
-        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Current Balance: <span id="bal-modal-current">0.00</span> USDT</div>
+        <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">Current Balance: <strong id="bal-modal-current" style="color:#fff;">0.00</strong> USDT</div>
       </div>
       <div class="admin-form-group">
-        <label class="admin-form-label">Amount to Add or Subtract (+50 or -50)</label>
-        <input type="number" id="bal-modal-amount" class="admin-form-input" placeholder="e.g. 100 or -50" step="0.01" required>
+        <label class="admin-form-label">Option A: Add (+) or Subtract (-) from Balance</label>
+        <input type="number" id="bal-modal-amount" class="admin-form-input" placeholder="e.g. +50 or -50 (can be negative multiple times)" step="0.01">
+        <div style="font-size:11px; color:#64748b; margin-top:4px;">Enter negative number like -50 to reduce balance. Can put minus repeatedly.</div>
+      </div>
+      <div class="admin-form-group" style="margin-top:14px; padding-top:12px; border-top:1px dashed #334155;">
+        <label class="admin-form-label">Option B: Set Exact Balance Directly</label>
+        <input type="number" id="bal-modal-exact" class="admin-form-input" placeholder="e.g. -80.00 or 150.00" step="0.01">
+        <div style="font-size:11px; color:#64748b; margin-top:4px;">Leave blank if using Option A above.</div>
       </div>
       <div class="admin-modal-footer">
         <button class="btn-sm btn-secondary-sm" onclick="closeModal('modal-adjust-balance')">Cancel</button>
-        <button class="btn-sm btn-primary-sm" id="btn-confirm-adjust-bal">Confirm Adjustment</button>
+        <button class="btn-sm btn-primary-sm" id="btn-confirm-adjust-bal">Confirm Balance Update</button>
       </div>
     </div>
   </div>
 
-  <!-- 3. Task Count Edit Modal -->
+  <!-- 3. Task Count & Max Profit Edit Modal -->
   <div class="admin-modal-overlay" id="modal-adjust-tasks">
     <div class="admin-modal-box">
       <div class="admin-modal-header">
-        <span>Adjust Task Progress</span>
+        <span>Adjust Tasks & Max Profit</span>
         <button onclick="closeModal('modal-adjust-tasks')" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
       </div>
       <div class="admin-form-group">
         <label class="admin-form-label">Target User: <strong id="task-modal-user" style="color: #ea580c;">-</strong></label>
       </div>
-      <div class="admin-form-group">
-        <label class="admin-form-label">Completed Tasks Count</label>
-        <input type="number" id="task-modal-completed" class="admin-form-input" placeholder="0" min="0">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div class="admin-form-group">
+          <label class="admin-form-label">Completed Tasks</label>
+          <input type="number" id="task-modal-completed" class="admin-form-input" placeholder="0" min="0">
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Max Daily Tasks Limit</label>
+          <input type="number" id="task-modal-max" class="admin-form-input" placeholder="60" min="1">
+        </div>
       </div>
       <div class="admin-form-group">
-        <label class="admin-form-label">Max Daily Tasks Limit</label>
-        <input type="number" id="task-modal-max" class="admin-form-input" placeholder="60" min="1">
+        <label class="admin-form-label">Max Cycle Profit ($USD)</label>
+        <input type="number" id="task-modal-profit" class="admin-form-input" placeholder="10.00" step="0.01" value="10.00">
+        <div style="font-size:11px; color:#64748b; margin-top:4px;">Default is 10.00 USD for a 60 task cycle. Commissions scale automatically.</div>
+      </div>
+      <div class="admin-form-group" style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+        <input type="checkbox" id="task-modal-reset-cycle" style="accent-color:#ea580c; width:16px; height:16px; cursor:pointer;">
+        <label for="task-modal-reset-cycle" style="font-size:12px; color:#cbd5e1; cursor:pointer;">Reset Cycle Profit counter (Start fresh cycle)</label>
       </div>
       <div class="admin-modal-footer">
         <button class="btn-sm btn-secondary-sm" onclick="closeModal('modal-adjust-tasks')">Cancel</button>
-        <button class="btn-sm btn-primary-sm" id="btn-confirm-adjust-tasks">Save Progress</button>
+        <button class="btn-sm btn-primary-sm" id="btn-confirm-adjust-tasks">Save Task & Profit Settings</button>
       </div>
     </div>
   </div>

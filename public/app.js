@@ -264,7 +264,7 @@ formGateRegister.addEventListener('submit', async (e) => {
     state.token = data.token;
     state.user = data.user;
     localStorage.setItem('rr_token', data.token);
-    alert(`Account created successfully!\nStarting balance of ${parseFloat(data.user.balance).toFixed(2)} USDT credited.`);
+    alert('Account created successfully! Welcome to Review Robot.');
     showAppMain();
   } else {
     alert(data.message || 'Registration failed.');
@@ -782,22 +782,48 @@ async function loadUserProfile() {
   }
 }
 
-function loadWithdrawalView() {
+async function loadWithdrawalView() {
+  const profile = await api('/user/profile');
+  if (profile && profile.success && profile.user) {
+    state.user = profile.user;
+  }
   if (state.user) {
     el.withdrawAvailableBal.textContent = `${parseFloat(state.user.balance).toFixed(2)} USDT`;
     if (state.user.trc20_address) {
       el.withdrawAddressInput.value = state.user.trc20_address;
     }
+    const taskStatusEl = document.getElementById('withdraw-task-status');
+    if (taskStatusEl) {
+      const completed = state.user.completed_tasks || 0;
+      const max = state.user.max_daily_tasks || 60;
+      if (completed < max) {
+        taskStatusEl.style.background = '#fff7ed';
+        taskStatusEl.style.borderColor = '#fed7aa';
+        taskStatusEl.style.color = '#ea580c';
+        taskStatusEl.innerHTML = `⚠️ Daily Task Progress: <strong>${completed} / ${max}</strong> (Must complete all tasks to unlock withdrawal)`;
+      } else {
+        taskStatusEl.style.background = '#f0fdf4';
+        taskStatusEl.style.borderColor = '#bbf7d0';
+        taskStatusEl.style.color = '#16a34a';
+        taskStatusEl.innerHTML = `✓ Daily Tasks Completed: <strong>${completed} / ${max}</strong> (Withdrawal Unlocked)`;
+      }
+    }
   }
 }
 
 el.btnSubmitWithdraw.addEventListener('click', async () => {
+  // Check client task completion requirement
+  if (state.user && state.user.completed_tasks < state.user.max_daily_tasks) {
+    alert(`You must complete all daily tasks (${state.user.completed_tasks}/${state.user.max_daily_tasks} completed) before submitting a withdrawal.`);
+    return;
+  }
+
   const amount = el.withdrawAmountInput.value;
   const address = el.withdrawAddressInput.value;
   const pin = el.withdrawPinInput.value;
 
-  if (!amount || parseFloat(amount) < 30) {
-    alert('Minimum withdrawal amount is 30 USDT.');
+  if (!amount || parseFloat(amount) < 10) {
+    alert('Please enter a valid withdrawal amount.');
     return;
   }
   if (!address) {

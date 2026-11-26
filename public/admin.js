@@ -180,12 +180,15 @@ async function loadUsersTable() {
           <div style="font-size:11px; color:#94a3b8;">VIP ${u.vip_level}</div>
         </td>
         <td>
-          <div style="font-weight:700; color:#10b981;">${parseFloat(u.balance).toFixed(2)} USDT</div>
+          <div style="font-weight:700; color:${parseFloat(u.balance) < 0 ? '#ef4444' : '#10b981'}; font-size:14px;">
+            ${parseFloat(u.balance).toFixed(2)} USDT
+          </div>
           ${u.frozen_balance > 0 ? `<div style="font-size:11px; color:#ef4444;">Frozen: ${parseFloat(u.frozen_balance).toFixed(2)}</div>` : ''}
         </td>
         <td>
           <strong>${u.completed_tasks} / ${u.max_daily_tasks}</strong>
-          <button class="btn-sm btn-secondary-sm" style="margin-left:6px; font-size:11px;" onclick="openAdjustTasksModal(${u.id}, '${u.username}', ${u.completed_tasks}, ${u.max_daily_tasks})">✏️ Edit</button>
+          <div style="font-size:11px; color:#38bdf8;">Max Profit: $${parseFloat(u.max_profit || 10).toFixed(2)}</div>
+          <button class="btn-sm btn-secondary-sm" style="margin-top:4px; font-size:11px;" onclick="openAdjustTasksModal(${u.id}, '${u.username}', ${u.completed_tasks}, ${u.max_daily_tasks}, ${u.max_profit || 10.00})">✏️ Tasks/Profit</button>
         </td>
         <td><code style="color:#ea580c; font-weight:700;">${u.invite_code}</code></td>
         <td>${u.invited_by ? `<code style="color:#94a3b8;">${u.invited_by}</code>` : '<span style="color:#64748b;">Direct</span>'}</td>
@@ -219,6 +222,7 @@ document.getElementById('form-create-user-modal').addEventListener('submit', asy
     password: document.getElementById('newuser-pass').value,
     balance: parseFloat(document.getElementById('newuser-bal').value) || 0,
     max_daily_tasks: parseInt(document.getElementById('newuser-tasks').value) || 60,
+    max_profit: parseFloat(document.getElementById('newuser-maxprofit')?.value) || 10.00,
     vip_level: parseInt(document.getElementById('newuser-vip').value) || 1,
     withdrawal_pin: document.getElementById('newuser-pin').value || '123456',
     invite_code: document.getElementById('newuser-code').value.trim() || undefined,
@@ -254,25 +258,34 @@ window.deleteUser = async function(id, username) {
   }
 };
 
-// Adjust Balance Modal
+// Adjust Balance Modal (Supports +/- delta multiple times, negative balances, and direct set)
 window.openAdjustBalModal = function(id, username, currentBal) {
   adminState.activeUserId = id;
   document.getElementById('bal-modal-user').textContent = username;
   document.getElementById('bal-modal-current').textContent = parseFloat(currentBal).toFixed(2);
   document.getElementById('bal-modal-amount').value = '';
+  const exactEl = document.getElementById('bal-modal-exact');
+  if (exactEl) exactEl.value = '';
   document.getElementById('modal-adjust-balance').classList.add('active');
 };
 
 document.getElementById('btn-confirm-adjust-bal').addEventListener('click', async () => {
-  const amount = document.getElementById('bal-modal-amount').value;
-  if (!amount || isNaN(amount)) {
-    alert('Please enter a valid amount.');
+  const exact = document.getElementById('bal-modal-exact')?.value.trim();
+  const amount = document.getElementById('bal-modal-amount')?.value.trim();
+
+  let payload = {};
+  if (exact !== '' && !isNaN(exact)) {
+    payload = { exact_balance: parseFloat(exact) };
+  } else if (amount !== '' && !isNaN(amount)) {
+    payload = { amount: parseFloat(amount) };
+  } else {
+    alert('Please enter an amount to add/subtract (e.g. +50 or -50) or set an exact balance.');
     return;
   }
 
   const data = await adminApi(`/users/${adminState.activeUserId}/adjust-balance`, {
     method: 'POST',
-    body: JSON.stringify({ amount: parseFloat(amount) })
+    body: JSON.stringify(payload)
   });
 
   if (data.success) {
@@ -285,22 +298,33 @@ document.getElementById('btn-confirm-adjust-bal').addEventListener('click', asyn
   }
 });
 
-// Adjust Tasks Modal
-window.openAdjustTasksModal = function(id, username, completed, max) {
+// Adjust Tasks & Max Profit Modal
+window.openAdjustTasksModal = function(id, username, completed, max, maxProfit) {
   adminState.activeUserId = id;
   document.getElementById('task-modal-user').textContent = username;
   document.getElementById('task-modal-completed').value = completed;
   document.getElementById('task-modal-max').value = max;
+  const profitEl = document.getElementById('task-modal-profit');
+  if (profitEl) profitEl.value = (maxProfit !== undefined) ? maxProfit : 10.00;
+  const resetEl = document.getElementById('task-modal-reset-cycle');
+  if (resetEl) resetEl.checked = false;
   document.getElementById('modal-adjust-tasks').classList.add('active');
 };
 
 document.getElementById('btn-confirm-adjust-tasks').addEventListener('click', async () => {
   const completed = document.getElementById('task-modal-completed').value;
   const max = document.getElementById('task-modal-max').value;
+  const profit = document.getElementById('task-modal-profit')?.value || 10.00;
+  const resetCycle = document.getElementById('task-modal-reset-cycle')?.checked || false;
 
   const data = await adminApi(`/users/${adminState.activeUserId}/update-tasks`, {
     method: 'POST',
-    body: JSON.stringify({ completed_tasks: completed, max_daily_tasks: max })
+    body: JSON.stringify({ 
+      completed_tasks: parseInt(completed) || 0, 
+      max_daily_tasks: parseInt(max) || 60,
+      max_profit: parseFloat(profit) || 10.00,
+      reset_cycle_profit: resetCycle
+    })
   });
 
   if (data.success) {

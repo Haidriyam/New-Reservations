@@ -18,11 +18,13 @@ function initDatabase() {
       withdrawal_pin TEXT DEFAULT '123456',
       invite_code TEXT UNIQUE NOT NULL,
       invited_by TEXT,
-      balance REAL DEFAULT 200.00,
+      balance REAL DEFAULT 0.00,
       frozen_balance REAL DEFAULT 0.00,
-      team_commission_unclaimed REAL DEFAULT 14.43,
+      team_commission_unclaimed REAL DEFAULT 0.00,
       completed_tasks INTEGER DEFAULT 0,
       max_daily_tasks INTEGER DEFAULT 60,
+      max_profit REAL DEFAULT 10.00,
+      cycle_profit REAL DEFAULT 0.00,
       vip_level INTEGER DEFAULT 1,
       trc20_address TEXT DEFAULT '',
       status TEXT DEFAULT 'active',
@@ -129,6 +131,14 @@ function initDatabase() {
   } catch (e) {
     // Column already exists
   }
+
+  // Migration: Ensure max_profit and cycle_profit exist in users table
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN max_profit REAL DEFAULT 10.00;");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN cycle_profit REAL DEFAULT 0.00;");
+  } catch (e) {}
 
   // Seed default settings if empty
   const getSetting = db.prepare('SELECT value FROM system_settings WHERE key = ?');

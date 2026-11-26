@@ -31,11 +31,13 @@ $db->exec("
         withdrawal_pin TEXT DEFAULT '123456',
         invite_code TEXT UNIQUE NOT NULL,
         invited_by TEXT,
-        balance REAL DEFAULT 200.00,
+        balance REAL DEFAULT 0.00,
         frozen_balance REAL DEFAULT 0.00,
         team_commission_unclaimed REAL DEFAULT 0.00,
         completed_tasks INTEGER DEFAULT 0,
         max_daily_tasks INTEGER DEFAULT 60,
+        max_profit REAL DEFAULT 10.00,
+        cycle_profit REAL DEFAULT 0.00,
         vip_level INTEGER DEFAULT 1,
         trc20_address TEXT DEFAULT '',
         status TEXT DEFAULT 'active',
@@ -137,6 +139,14 @@ try {
     $db->exec("ALTER TABLE admins ADD COLUMN role TEXT DEFAULT 'superadmin';");
 } catch (Exception $e) {}
 
+// Migration: Ensure max_profit and cycle_profit exist in users table
+try {
+    $db->exec("ALTER TABLE users ADD COLUMN max_profit REAL DEFAULT 10.00;");
+} catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE users ADD COLUMN cycle_profit REAL DEFAULT 0.00;");
+} catch (Exception $e) {}
+
 // Seed Defaults Settings
 $defaults = [
     'platform_name' => 'Review Robot - xinmingzhi',
@@ -145,6 +155,7 @@ $defaults = [
     'min_withdraw' => '30',
     'default_commission_rate' => '0.006',
     'default_daily_tasks' => '60',
+    'default_max_profit' => '10.00',
     'customer_service_url' => 'https://t.me/review_robot_support',
     'admin_secret_path' => '/secret-admin-portal-xyz',
     'referral_commission_l1' => '0.16',
@@ -401,7 +412,7 @@ try {
 
         // Validate invite code: either admin promo token OR existing user referral code
         $inviter = null;
-        $bonusBalance = 200.00;
+        $bonusBalance = 0.00;
         $vipLevel = 1;
         $adminCodeId = null;
 
@@ -442,8 +453,8 @@ try {
         $now = date('Y-m-d H:i:s');
         $hash = password_hash($password, PASSWORD_BCRYPT);
         $insert = $db->prepare("
-            INSERT INTO users (username, password_hash, withdrawal_pin, invite_code, invited_by, balance, completed_tasks, max_daily_tasks, vip_level, trc20_address, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, 0, 60, ?, '', ?)
+            INSERT INTO users (username, password_hash, withdrawal_pin, invite_code, invited_by, balance, completed_tasks, max_daily_tasks, max_profit, cycle_profit, vip_level, trc20_address, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, 0, 60, 10.00, 0.00, ?, '', ?)
         ");
         $insert->execute([$username, $hash, $pin, $myCode, $inviter, $bonusBalance, $vipLevel, $now]);
         $newUserId = $db->lastInsertId();
@@ -459,7 +470,7 @@ try {
         $token = generateToken(['id' => $newUser['id'], 'username' => $newUser['username']], $JWT_SECRET);
         echo json_encode([
             'success' => true,
-            'message' => "Welcome to Review Robot! Starting balance of {$bonusBalance} USDT credited.",
+            'message' => 'Welcome to Review Robot! Account created successfully.',
             'token' => $token,
             'user' => $newUser
         ]);
@@ -496,6 +507,8 @@ try {
             'balance' => floatval($user['balance']),
             'completed_tasks' => intval($user['completed_tasks']),
             'total_task' => intval($user['max_daily_tasks']),
+            'max_profit' => floatval($user['max_profit'] ?? 10.00),
+            'cycle_profit' => floatval($user['cycle_profit'] ?? 0.00),
             'vip_level' => intval($user['vip_level'])
         ]);
         exit;
@@ -506,11 +519,21 @@ try {
         $user = requireUserAuth($db, $JWT_SECRET);
 
         // Check task quota
-        if ($user['completed_tasks'] >= $user['max_daily_tasks']) {
+        if (intval($user['completed_tasks']) >= intval($user['max_daily_tasks'])) {
             echo json_encode([
                 'success' => false,
                 'code' => 'QUOTA_REACHED',
-                'message' => 'You have completed all daily review tasks. Please check back tomorrow!'
+                'message' => "Today's task quota ({$user['completed_tasks']}/{$user['max_daily_tasks']}) has been reached. You can now submit your withdrawal!"
+            ]);
+            exit;
+        }
+
+        // Check balance - if negative or zero, require recharge
+        if (floatval($user['balance']) <= 0) {
+            echo json_encode([
+                'success' => false,
+                'code' => 'INSUFFICIENT_BALANCE',
+                'message' => 'Your balance is ' . number_format(floatval($user['balance']), 2) . ' USDT. Please recharge to continue task matching.'
             ]);
             exit;
         }
@@ -542,7 +565,7 @@ try {
             }
         }
 
-        // Normal matching: pick product
+        // Normal matching: pick product and calculate commission based on user's max_profit
         $stmtProd = $db->query("SELECT * FROM products ORDER BY RANDOM() LIMIT 1");
         $product = $stmtProd->fetch();
         if (!$product) {
@@ -551,7 +574,20 @@ try {
         }
 
         $price = floatval($product['price']);
-        $comm = round($price * floatval($product['commission_rate']), 2);
+        $maxProfit = floatval($user['max_profit'] ?? 10.00);
+        $cycleProfit = floatval($user['cycle_profit'] ?? 0.00);
+        $remProfit = max(0.0, round($maxProfit - $cycleProfit, 2));
+        $remTasks = max(1, intval($user['max_daily_tasks']) - intval($user['completed_tasks']));
+
+        if ($remProfit <= 0) {
+            $comm = 0.00;
+        } elseif ($remTasks === 1) {
+            $comm = $remProfit;
+        } else {
+            $targetComm = $remProfit / $remTasks;
+            $variance = (random_int(-10, 10) / 100.0) * $targetComm;
+            $comm = round(max(0.05, min($remProfit, $targetComm + $variance)), 2);
+        }
 
         echo json_encode([
             'success' => true,
@@ -588,8 +624,10 @@ try {
 
         $newBal = round(floatval($user['balance']) + $comm, 2);
         $newTasks = intval($user['completed_tasks']) + 1;
+        $newCycleProfit = round(floatval($user['cycle_profit'] ?? 0.0) + $comm, 2);
 
-        $db->prepare("UPDATE users SET balance = ?, completed_tasks = ? WHERE id = ?")->execute([$newBal, $newTasks, $user['id']]);
+        $db->prepare("UPDATE users SET balance = ?, completed_tasks = ?, cycle_profit = ? WHERE id = ?")
+           ->execute([$newBal, $newTasks, $newCycleProfit, $user['id']]);
 
         // Referral commission kickback to inviter
         if (!empty($user['invited_by'])) {
@@ -601,7 +639,8 @@ try {
             'success' => true,
             'message' => 'Order submitted successfully!',
             'new_balance' => $newBal,
-            'completed_tasks' => $newTasks
+            'completed_tasks' => $newTasks,
+            'cycle_profit' => $newCycleProfit
         ]);
         exit;
     }
@@ -705,6 +744,28 @@ try {
         $user = requireUserAuth($db, $JWT_SECRET);
         $body = getJsonInput();
 
+        // 1. Must complete all daily tasks first (Client can only withdraw when tasks completed)
+        if (intval($user['completed_tasks']) < intval($user['max_daily_tasks'])) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => "You must complete all daily tasks ({$user['completed_tasks']}/{$user['max_daily_tasks']} completed) before submitting a withdrawal."
+            ]);
+            exit;
+        }
+
+        // 2. Unfinished orders check
+        $stmtUnf = $db->prepare("SELECT COUNT(*) FROM orders WHERE user_id = ? AND status != 'completed'");
+        $stmtUnf->execute([$user['id']]);
+        if ($stmtUnf->fetchColumn() > 0) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'You have unfinished orders. Please complete all pending tasks before withdrawing.'
+            ]);
+            exit;
+        }
+
         $amount = floatval($body['amount'] ?? 0);
         $pin = $body['withdrawal_pin'] ?? '';
         $addr = trim($body['trc20_address'] ?? $user['trc20_address']);
@@ -792,7 +853,7 @@ try {
     // Admin Users List & Creation
     if ($method === 'GET' && $route === '/admin/users') {
         requireAdminAuth($db, $JWT_SECRET);
-        $stmt = $db->query("SELECT id, username, balance, frozen_balance, completed_tasks, max_daily_tasks, vip_level, invite_code, invited_by, status, created_at FROM users ORDER BY id DESC");
+        $stmt = $db->query("SELECT id, username, balance, frozen_balance, completed_tasks, max_daily_tasks, max_profit, cycle_profit, vip_level, invite_code, invited_by, status, created_at FROM users ORDER BY id DESC");
         echo json_encode(['success' => true, 'users' => $stmt->fetchAll()]);
         exit;
     }
@@ -802,22 +863,23 @@ try {
         $body = getJsonInput();
         $username = trim($body['username'] ?? '');
         $password = $body['password'] ?? '';
-        $balance = floatval($body['balance'] ?? 200);
+        $balance = floatval($body['balance'] ?? 0);
         $dailyTasks = intval($body['max_daily_tasks'] ?? 60);
+        $maxProfit = floatval($body['max_profit'] ?? 10.00);
         $vip = intval($body['vip_level'] ?? 1);
         $pin = $body['withdrawal_pin'] ?? '123456';
         $code = strtoupper(trim($body['invite_code'] ?? generateRandomCode(8)));
         $now = date('Y-m-d H:i:s');
 
         $hash = password_hash($password, PASSWORD_BCRYPT);
-        $insert = $db->prepare("INSERT INTO users (username, password_hash, withdrawal_pin, invite_code, balance, completed_tasks, max_daily_tasks, vip_level, created_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)");
-        $insert->execute([$username, $hash, $pin, $code, $balance, $dailyTasks, $vip, $now]);
+        $insert = $db->prepare("INSERT INTO users (username, password_hash, withdrawal_pin, invite_code, balance, completed_tasks, max_daily_tasks, max_profit, cycle_profit, vip_level, created_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?, 0.00, ?, ?)");
+        $insert->execute([$username, $hash, $pin, $code, $balance, $dailyTasks, $maxProfit, $vip, $now]);
         $newId = $db->lastInsertId();
 
         echo json_encode([
             'success' => true,
             'message' => "User {$username} created successfully!",
-            'user' => ['id' => $newId, 'username' => $username, 'balance' => $balance, 'invite_code' => $code]
+            'user' => ['id' => $newId, 'username' => $username, 'balance' => $balance, 'max_daily_tasks' => $dailyTasks, 'max_profit' => $maxProfit, 'invite_code' => $code]
         ]);
         exit;
     }
@@ -831,28 +893,43 @@ try {
         exit;
     }
 
-    // Adjust Balance
+    // Adjust Balance (Supports ± delta or exact balance, allows negative values freely)
     if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/adjust-balance$#', $route, $m)) {
         requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
         $uid = intval($m[1]);
         $body = getJsonInput();
-        $amt = floatval($body['amount'] ?? 0);
 
-        $db->prepare("UPDATE users SET balance = balance + ? WHERE id = ?")->execute([$amt, $uid]);
-        echo json_encode(['success' => true, 'message' => "Balance adjusted by {$amt} USDT."]);
+        if (isset($body['exact_balance']) && is_numeric($body['exact_balance'])) {
+            $newBal = round(floatval($body['exact_balance']), 2);
+            $db->prepare("UPDATE users SET balance = ? WHERE id = ?")->execute([$newBal, $uid]);
+            echo json_encode(['success' => true, 'message' => "Balance set directly to {$newBal} USDT."]);
+        } else {
+            $amt = floatval($body['amount'] ?? 0);
+            $db->prepare("UPDATE users SET balance = ROUND(balance + ?, 2) WHERE id = ?")->execute([$amt, $uid]);
+            $stmtCur = $db->prepare("SELECT balance FROM users WHERE id = ?");
+            $stmtCur->execute([$uid]);
+            $curBal = floatval($stmtCur->fetchColumn());
+            echo json_encode(['success' => true, 'message' => "Balance adjusted by {$amt} USDT. Current balance: {$curBal} USDT."]);
+        }
         exit;
     }
 
-    // Adjust Tasks
+    // Adjust Tasks & Max Profit
     if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/update-tasks$#', $route, $m)) {
         requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
         $uid = intval($m[1]);
         $body = getJsonInput();
         $comp = intval($body['completed_tasks'] ?? 0);
         $max = intval($body['max_daily_tasks'] ?? 60);
+        $profit = floatval($body['max_profit'] ?? 10.00);
+        $resetCycle = !empty($body['reset_cycle_profit']) || ($comp === 0);
 
-        $db->prepare("UPDATE users SET completed_tasks = ?, max_daily_tasks = ? WHERE id = ?")->execute([$comp, $max, $uid]);
-        echo json_encode(['success' => true, 'message' => 'Task counts updated!']);
+        if ($resetCycle) {
+            $db->prepare("UPDATE users SET completed_tasks = ?, max_daily_tasks = ?, max_profit = ?, cycle_profit = 0.00 WHERE id = ?")->execute([$comp, $max, $profit, $uid]);
+        } else {
+            $db->prepare("UPDATE users SET completed_tasks = ?, max_daily_tasks = ?, max_profit = ? WHERE id = ?")->execute([$comp, $max, $profit, $uid]);
+        }
+        echo json_encode(['success' => true, 'message' => "Task progress and max profit updated! ({$comp}/{$max} tasks, Max Profit: {$profit} USDT)"]);
         exit;
     }
 
