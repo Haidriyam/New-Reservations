@@ -25,3 +25,5 @@ New-Reservations-Project.zip
 New-Reservations-Export/
 sync_export.py
 test_*.py
+app/
+legacy_web_backend/

@@ -689,110 +689,635 @@ body {
 /* ===================================================
    INDEX VIEW
    =================================================== */
-.hero-banner-card {
-  background: var(--primary-gradient);
-  border-radius: 16px;
-  padding: 24px 20px;
-  color: #fff;
-  margin-bottom: 16px;
-  box-shadow: 0 6px 18px rgba(234, 108, 53, 0.25);
-}
-
-.hero-banner-content h2 {
-  font-size: 20px;
-  font-weight: 800;
-  margin-bottom: 6px;
-}
-
-.hero-banner-content p {
-  font-size: 13px;
-  opacity: 0.92;
-  line-height: 1.45;
-  margin-bottom: 14px;
-}
-
-.btn-hero-trade {
-  padding: 8px 18px;
-  background: #ffffff;
-  color: var(--primary);
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.rolling-live-ticker {
-  background: #fff;
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-
-.live-pill {
-  background: #fef2f2;
-  color: #ef4444;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 12px;
-}
-
-.ticker-content {
-  font-size: 12.5px;
-  color: #4b5563;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  flex: 1;
-}
-
-.vip-matrix-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 18px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-.vip-matrix-title {
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 14px;
-  color: #111827;
-}
-
-.vip-tiers-grid {
+.index-responsive-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+  padding-bottom: 24px;
 }
 
-.vip-tier-item {
+/* 1. Cumulative Income Pill Bar */
+.cumulative-income-bar {
+  background: linear-gradient(90deg, #f96324 0%, #ea580c 100%);
+  border-radius: 14px;
+  padding: 13px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
-  background: #f8fafc;
-  border-radius: 10px;
-  border-left: 4px solid #94a3b8;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.22);
 }
 
-.tier-vip1 {
-  background: #fff7ed;
-  border-left: 4px solid #ea580c;
+.income-label {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
 }
-.tier-vip1 .tier-name { color: #9a3412; }
-.tier-vip1 .tier-comm { color: #ea580c; font-weight: 700; font-size: 14px; }
 
-.tier-quota {
-  font-size: 12px;
+.income-value-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tether-badge-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: #26a17b;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 2px 5px rgba(38, 161, 123, 0.35);
+}
+
+.income-amount {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.income-currency {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+/* 2. Hero Promo Card: AliExpress + REVIEW ROBOT */
+.promo-honeycomb-card {
+  position: relative;
+  background:
+    radial-gradient(circle at 90% 30%, rgba(251, 191, 36, 0.4) 0%, transparent 60%),
+    linear-gradient(135deg, #fffbeb 0%, #fef3c7 45%, #fde68a 100%);
+  border-radius: 18px;
+  padding: 18px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(253, 224, 71, 0.6);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.promo-honeycomb-card:active {
+  transform: scale(0.99);
+}
+
+.promo-card-left {
+  flex: 1;
+  z-index: 2;
+  max-width: 65%;
+}
+
+.promo-title-aliexpress {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ea580c;
+  line-height: 1.2;
+}
+
+.promo-title-aliexpress .plus-sign {
+  color: #f97316;
+  font-weight: 900;
+}
+
+.promo-title-robot {
+  font-size: 20px;
+  font-weight: 900;
+  color: #c2410c;
+  letter-spacing: 0.3px;
+  margin-bottom: 8px;
+  line-height: 1.15;
+}
+
+.promo-badge-pill {
+  display: inline-block;
+  background: linear-gradient(90deg, #ea580c 0%, #f97316 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 14px;
+  box-shadow: 0 3px 8px rgba(234, 88, 12, 0.28);
+  white-space: nowrap;
+}
+
+.promo-subtext {
+  font-size: 9.5px;
+  color: #78350f;
+  margin-top: 8px;
+  line-height: 1.35;
+  font-weight: 500;
+  opacity: 0.88;
+}
+
+/* 3D Floating Coins on Promo Card */
+.promo-card-right {
+  position: relative;
+  width: 100px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.promo-3d-coins-visual {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.coin-3d {
+  position: absolute;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: #ffffff;
+  box-shadow:
+    inset 0 3px 6px rgba(255, 255, 255, 0.6),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.2),
+    0 6px 14px rgba(234, 88, 12, 0.35);
+}
+
+.coin-3d-u {
+  width: 46px;
+  height: 46px;
+  top: 6px;
+  right: 28px;
+  background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+  border: 3px solid #fed7aa;
+  font-size: 22px;
+  z-index: 2;
+  transform: rotate(-10deg);
+}
+
+.coin-3d-a {
+  width: 44px;
+  height: 44px;
+  bottom: 6px;
+  right: 4px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 3px solid #fef3c7;
+  font-size: 20px;
+  z-index: 3;
+  transform: rotate(8deg);
+}
+
+.coin-ribbon-curl {
+  position: absolute;
+  width: 60px;
+  height: 70px;
+  right: 14px;
+  top: 10px;
+  border: 5px solid #f97316;
+  border-radius: 50%;
+  border-top-color: transparent;
+  border-left-color: transparent;
+  transform: rotate(35deg);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* 3. Real-time Announcement Ticker */
+.news-ticker-bar {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
+}
+
+.ticker-speaker-icon {
   color: #64748b;
-  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ticker-marquee-track {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker-marquee-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* 4. Section Blocks & Headings */
+.section-block {
+  margin-top: 6px;
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 12px;
+  letter-spacing: -0.2px;
+}
+
+/* "My service" Grid */
+.my-service-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.service-card {
+  border-radius: 16px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.service-card:active {
+  transform: scale(0.98);
+}
+
+/* Left Card: Serve */
+.card-serve {
+  background: linear-gradient(145deg, #5c6ef8 0%, #4351e8 100%);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 142px;
+  box-shadow: 0 6px 18px rgba(67, 81, 232, 0.28);
+}
+
+.card-serve .service-card-title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.serve-headset-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.headset-svg {
+  width: 58px;
+  height: 58px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+.headset-sparkle {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.headset-sparkle.sp1 { top: -4px; left: 14px; font-size: 12px; }
+.headset-sparkle.sp2 { bottom: 4px; right: 12px; font-size: 16px; }
+
+/* Right Stacked: About Us & Help */
+.service-stacked-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-about {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 14px;
+  flex: 1;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+}
+
+.card-about .service-card-title,
+.card-help .service-card-title {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.card-help {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 14px;
+  flex: 1;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
+}
+
+.card-icon-3d {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.question-mark-icon {
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  line-height: 1;
+}
+
+.robot-head-icon {
+  width: 32px;
+  height: 32px;
+}
+
+/* 5. "Partner" Carousel / Grid */
+.partner-carousel-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 10px 4px;
+}
+
+.partner-nav-arrow {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: #94a3b8;
+  width: 28px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.partner-nav-arrow:hover {
+  color: #334155;
+}
+
+.partner-viewport {
+  flex: 1;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.partner-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.partner-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 90px);
+  gap: 10px;
+  padding: 4px;
+}
+
+.partner-tile {
+  background: #ffffff;
+  border-radius: 14px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
+  user-select: none;
+  transition: transform 0.2s ease;
+}
+
+.partner-tile:hover {
+  transform: translateY(-2px);
+}
+
+/* Partner Brand Badges */
+.tile-shopify { background: #ffffff; }
+.logo-shopify { color: #95bf47; font-weight: 800; font-size: 13px; letter-spacing: -0.3px; }
+
+.tile-walmart { background: #0071dc; }
+.logo-walmart { color: #ffffff; font-weight: 800; font-size: 12px; }
+.logo-walmart span { color: #ffc220; font-size: 13px; }
+
+.tile-groupon { background: #53a318; }
+.logo-groupon { color: #ffffff; font-weight: 800; font-size: 11px; letter-spacing: 0.5px; }
+
+.tile-binance { background: #181a20; }
+.logo-binance { color: #ffffff; font-weight: 800; font-size: 11px; }
+.binance-diamond { color: #f0b90b; font-size: 12px; }
+
+.tile-okx { background: #000000; }
+.logo-okx { color: #ffffff; font-weight: 900; font-size: 14px; letter-spacing: 1px; }
+
+.tile-ebay { background: #ffffff; }
+.logo-ebay { font-weight: 900; font-size: 17px; letter-spacing: -1px; }
+.e-red { color: #e53238; }
+.e-blue { color: #0064d2; }
+.e-yellow { color: #f5af02; }
+.e-green { color: #86b817; }
+
+.tile-amazon { background: #131921; }
+.logo-amazon { color: #ffffff; font-weight: 800; font-size: 12px; position: relative; }
+.amazon-smile { color: #ff9900; position: absolute; bottom: -8px; left: 16px; font-size: 14px; }
+
+.tile-alibaba { background: #ff6a00; }
+.logo-alibaba { color: #ffffff; font-weight: 800; font-size: 12px; font-style: italic; }
+
+.tile-bestbuy { background: #0046be; }
+.logo-bestbuy { color: #ffffff; font-weight: 900; font-size: 10px; line-height: 1.1; text-align: center; }
+
+/* 6. "Hall of Fame" Card */
+.hall-of-fame-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f1f5f9;
+}
+
+.fame-records-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fame-row {
+  display: grid;
+  grid-template-columns: 100px 1fr auto;
+  align-items: center;
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px dashed #f1f5f9;
+}
+
+.fame-row:last-child {
+  border-bottom: none;
+}
+
+.fame-user {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.fame-action {
+  color: #64748b;
+  text-align: center;
+  font-size: 12.5px;
+}
+
+.fame-amount {
+  color: #0d9488;
+  font-weight: 700;
+  text-align: right;
+  letter-spacing: 0.2px;
+}
+
+/* Modals for About Us & Help Guide */
+.modal-dialog-generic {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 440px;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+  animation: modalPopIn 0.25s ease-out;
+}
+
+.modal-dialog-header {
+  padding: 18px 20px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.modal-dialog-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.modal-close-x {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: #94a3b8;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-dialog-body {
+  padding: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+  font-size: 13.5px;
+  color: #4b5563;
+  line-height: 1.55;
+}
+
+.modal-dialog-body h4 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #111827;
+  margin: 14px 0 6px;
+}
+
+.modal-dialog-body h4:first-child {
+  margin-top: 0;
+}
+
+.about-hero-graphic {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.about-badge-chip {
+  background: #fff7ed;
+  color: #ea580c;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid #ffedd5;
+  display: inline-block;
+}
+
+.about-points {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.about-point-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: #334155;
+}
+
+.check-icon {
+  color: #10b981;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.help-vip-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 12.5px;
+}
+
+.help-vip-table th,
+.help-vip-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.help-vip-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+}
+
+.modal-dialog-footer {
+  padding: 14px 20px 18px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-primary-action {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
 }
 
 /* ===================================================
@@ -1323,21 +1848,46 @@ body {
   }
 
   /* 5. INDEX DESKTOP GRID */
-  .hero-banner-card {
-    padding: 36px 32px;
+  .index-responsive-container {
+    max-width: 680px;
+    margin: 0 auto;
+    gap: 18px;
   }
-  .hero-banner-content h2 {
+  .promo-honeycomb-card {
+    padding: 24px 28px;
+  }
+  .promo-title-aliexpress {
+    font-size: 20px;
+  }
+  .promo-title-robot {
+    font-size: 24px;
+  }
+  .promo-badge-pill {
+    font-size: 12px;
+    padding: 5px 14px;
+  }
+  .promo-subtext {
+    font-size: 11px;
+  }
+  .promo-card-right {
+    width: 140px;
+    height: 110px;
+  }
+  .coin-3d-u {
+    width: 56px;
+    height: 56px;
     font-size: 26px;
   }
-  .hero-banner-content p {
-    font-size: 15px;
-    max-width: 650px;
+  .coin-3d-a {
+    width: 52px;
+    height: 52px;
+    font-size: 24px;
   }
-
-  .vip-tiers-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+  .partner-grid {
+    grid-template-columns: repeat(9, 100px);
+  }
+  .partner-tile {
+    height: 72px;
   }
 
   /* 6. PERSONAL DESKTOP GRID */

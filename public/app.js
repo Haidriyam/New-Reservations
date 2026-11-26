@@ -145,7 +145,7 @@ function showAppMain() {
     if (deskBal) deskBal.textContent = parseFloat(state.user.balance || 0).toFixed(2);
   }
 
-  switchTab('trade');
+  switchTab('index');
 }
 
 function logoutUser() {
@@ -319,6 +319,16 @@ function switchTab(tabName) {
   };
   el.pageTitle.textContent = titles[tabName] || 'Review Robot';
 
+  // Mobile app-header visibility (Index has no header bar in video)
+  const appHeader = document.querySelector('.app-header');
+  if (appHeader) {
+    if (tabName === 'index') {
+      appHeader.style.display = 'none';
+    } else {
+      appHeader.style.display = 'flex';
+    }
+  }
+
   // Back button visibility
   if (tabName === 'recharge' || tabName === 'withdraw') {
     el.headerBackBtn.style.visibility = 'visible';
@@ -327,12 +337,106 @@ function switchTab(tabName) {
   }
 
   // Load view-specific data
+  if (tabName === 'index') loadIndexView();
   if (tabName === 'trade') loadTradeStatus();
   if (tabName === 'team') loadTeamData();
   if (tabName === 'order') loadOrders('all');
   if (tabName === 'recharge') loadRechargeInfo();
   if (tabName === 'personal') loadUserProfile();
   if (tabName === 'withdraw') loadWithdrawalView();
+}
+
+// -------------------------------------------------------------
+// 0. INDEX / HOME VIEW LOGIC (Exact Match to Reference Video)
+// -------------------------------------------------------------
+let indexTickerInterval = null;
+let hallOfFameInterval = null;
+
+const tickerAnnouncements = [
+  '312***158 Recharge 2670USDT',
+  '07***250 Successful withdrawal 1494USDT',
+  '815***265 Recharge 1720USDT',
+  '139***811 Successful withdrawal 1523USDT',
+  '019***479 Successful withdrawal 1124USDT',
+  '456***542 Successful withdrawal 625USDT',
+  '356***453 Successful withdrawal 1849USDT',
+  '921***402 Recharge 3200USDT'
+];
+
+let tickerIndex = 0;
+function startIndexTicker() {
+  if (indexTickerInterval) return;
+  const tickerEl = document.getElementById('index-news-ticker-text');
+  if (!tickerEl) return;
+
+  indexTickerInterval = setInterval(() => {
+    tickerIndex = (tickerIndex + 1) % tickerAnnouncements.length;
+    tickerEl.style.opacity = '0';
+    tickerEl.style.transform = 'translateY(-6px)';
+    setTimeout(() => {
+      tickerEl.textContent = tickerAnnouncements[tickerIndex];
+      tickerEl.style.opacity = '1';
+      tickerEl.style.transform = 'translateY(0)';
+    }, 250);
+  }, 2800);
+}
+
+const hallOfFameRecords = [
+  { user: '815***265', action: 'Recharge', amount: '1720USDT' },
+  { user: '139***811', action: 'Successful withdrawal', amount: '1523USDT' },
+  { user: '017***056', action: 'Successful withdrawal', amount: '951USDT' },
+  { user: '456***542', action: 'Successful withdrawal', amount: '625USDT' },
+  { user: '301***326', action: 'Recharge', amount: '525USDT' },
+  { user: '312***158', action: 'Recharge', amount: '2670USDT' },
+  { user: '019***479', action: 'Successful withdrawal', amount: '1124USDT' },
+  { user: '356***453', action: 'Successful withdrawal', amount: '1849USDT' },
+  { user: '921***402', action: 'Recharge', amount: '3200USDT' },
+  { user: '084***771', action: 'Successful withdrawal', amount: '2150USDT' },
+  { user: '553***109', action: 'Recharge', amount: '800USDT' },
+  { user: '612***899', action: 'Successful withdrawal', amount: '1494USDT' }
+];
+
+let fameCurrentIndex = 0;
+function renderHallOfFame() {
+  const container = document.getElementById('hall-of-fame-list');
+  if (!container) return;
+
+  const items = [];
+  for (let i = 0; i < 5; i++) {
+    const item = hallOfFameRecords[(fameCurrentIndex + i) % hallOfFameRecords.length];
+    items.push(`
+      <div class="fame-row">
+        <span class="fame-user">${item.user}</span>
+        <span class="fame-action">${item.action}</span>
+        <span class="fame-amount">${item.amount}</span>
+      </div>
+    `);
+  }
+  container.innerHTML = items.join('');
+}
+
+function startHallOfFame() {
+  renderHallOfFame();
+  if (hallOfFameInterval) return;
+  hallOfFameInterval = setInterval(() => {
+    fameCurrentIndex = (fameCurrentIndex + 1) % hallOfFameRecords.length;
+    renderHallOfFame();
+  }, 2400);
+}
+
+function loadIndexView() {
+  // Update cumulative income
+  const cumEl = document.getElementById('index-cumulative-income');
+  if (cumEl) {
+    if (state.user && state.user.balance !== undefined && parseFloat(state.user.balance) > 0) {
+      cumEl.textContent = parseFloat(state.user.balance).toFixed(2);
+    } else {
+      cumEl.textContent = '546.12';
+    }
+  }
+
+  startIndexTicker();
+  startHallOfFame();
 }
 
 // -------------------------------------------------------------
@@ -745,7 +849,7 @@ document.getElementById('menu-btn-logout').addEventListener('click', logoutUser)
 
 // Header Back Button
 el.headerBackBtn.addEventListener('click', () => {
-  switchTab('trade');
+  switchTab('index');
 });
 
 // Mobile Header Menu Dots -> Navigate to Personal
@@ -765,6 +869,42 @@ document.querySelectorAll('.desktop-nav-item').forEach(item => {
   item.addEventListener('click', () => {
     switchTab(item.dataset.tab);
   });
+});
+
+// Index Page Action Listeners (Serve, About Us, Help, Partner Carousel)
+document.getElementById('btn-service-serve')?.addEventListener('click', () => {
+  window.open(state.publicConfig.customer_service_url || 'https://t.me/review_robot_support', '_blank');
+});
+
+const modalAbout = document.getElementById('modal-about-us');
+document.getElementById('btn-service-about')?.addEventListener('click', () => {
+  modalAbout?.classList.add('active');
+});
+document.getElementById('btn-close-about')?.addEventListener('click', () => {
+  modalAbout?.classList.remove('active');
+});
+document.getElementById('btn-confirm-about')?.addEventListener('click', () => {
+  modalAbout?.classList.remove('active');
+});
+
+const modalHelp = document.getElementById('modal-help-guide');
+document.getElementById('btn-service-help')?.addEventListener('click', () => {
+  modalHelp?.classList.add('active');
+});
+document.getElementById('btn-close-help')?.addEventListener('click', () => {
+  modalHelp?.classList.remove('active');
+});
+document.getElementById('btn-confirm-help')?.addEventListener('click', () => {
+  modalHelp?.classList.remove('active');
+});
+
+// Partner Carousel Scroll
+const partnerViewport = document.getElementById('partner-viewport');
+document.getElementById('partner-prev-btn')?.addEventListener('click', () => {
+  partnerViewport?.scrollBy({ left: -190, behavior: 'smooth' });
+});
+document.getElementById('partner-next-btn')?.addEventListener('click', () => {
+  partnerViewport?.scrollBy({ left: 190, behavior: 'smooth' });
 });
 
 // -------------------------------------------------------------
