@@ -16,7 +16,8 @@ const adminState = {
 // API Fetch with Admin Auth
 async function adminApi(endpoint, options = {}) {
   const headers = options.headers || {};
-  if (adminState.token) {
+  // Never pass previous token to login endpoint
+  if (adminState.token && endpoint !== '/login') {
     headers['Authorization'] = `Bearer ${adminState.token}`;
   }
   if (!headers['Content-Type']) {
@@ -29,7 +30,11 @@ async function adminApi(endpoint, options = {}) {
       headers
     });
     const data = await res.json();
-    if (res.status === 401) {
+    if (res.status === 401 && endpoint !== '/login') {
+      adminState.token = '';
+      adminState.admin = null;
+      localStorage.removeItem('rr_admin_token');
+      localStorage.removeItem('rr_admin_user');
       showAdminLogin();
     }
     return data;
@@ -68,16 +73,40 @@ function showAdminDashboard() {
   switchAdminSection('overview');
 }
 
+// Quick Fill Master Admin Button
+const btnQuickFill = document.getElementById('btn-quick-admin-fill');
+if (btnQuickFill) {
+  btnQuickFill.addEventListener('click', () => {
+    document.getElementById('admin-username-input').value = 'admin';
+    document.getElementById('admin-password-input').value = 'Admin@2026!Master';
+    const errBox = document.getElementById('admin-login-error');
+    if (errBox) errBox.style.display = 'none';
+  });
+}
+
 // Admin Login Form
 document.getElementById('form-admin-login').addEventListener('submit', async (e) => {
   e.preventDefault();
   const username = document.getElementById('admin-username-input').value.trim();
   const password = document.getElementById('admin-password-input').value;
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const errorBox = document.getElementById('admin-login-error');
+  if (errorBox) errorBox.style.display = 'none';
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Authenticating...';
+  }
 
   const data = await adminApi('/login', {
     method: 'POST',
     body: JSON.stringify({ username, password })
   });
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Authenticate & Sign In';
+  }
 
   if (data.success) {
     adminState.token = data.token;
@@ -86,7 +115,12 @@ document.getElementById('form-admin-login').addEventListener('submit', async (e)
     localStorage.setItem('rr_admin_user', JSON.stringify(data.admin));
     showAdminDashboard();
   } else {
-    alert(data.message || 'Login failed.');
+    if (errorBox) {
+      errorBox.textContent = data.message || 'Login failed. Please check your username and password.';
+      errorBox.style.display = 'block';
+    } else {
+      alert(data.message || 'Login failed.');
+    }
   }
 });
 

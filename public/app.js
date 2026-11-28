@@ -214,6 +214,12 @@ formGateLogin.addEventListener('submit', async (e) => {
   btnText.textContent = 'Sign In to Account';
 
   if (data.success) {
+    if (data.is_admin && data.redirect) {
+      localStorage.setItem('rr_admin_token', data.token);
+      localStorage.setItem('rr_admin_user', JSON.stringify(data.admin));
+      window.location.href = data.redirect;
+      return;
+    }
     state.token = data.token;
     state.user = data.user;
     localStorage.setItem('rr_token', data.token);

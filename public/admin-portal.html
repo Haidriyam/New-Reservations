@@ -20,6 +20,8 @@
         </div>
       </div>
 
+      <div id="admin-login-error" style="display: none; background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; text-align: center;"></div>
+
       <form id="form-admin-login">
         <div class="admin-form-group">
           <label class="admin-form-label">Admin Username</label>
@@ -29,16 +31,23 @@
           <label class="admin-form-label">Admin Password</label>
           <input type="password" id="admin-password-input" class="admin-form-input" placeholder="••••••••••••" value="Admin@2026!Master" required>
         </div>
-        <button type="submit" class="btn-sm btn-primary-sm" style="width: 100%; height: 44px; font-size: 14.5px; font-weight: 700; margin-top: 12px;">
+        <button type="submit" class="btn-sm btn-primary-sm" style="width: 100%; height: 44px; font-size: 14.5px; font-weight: 700; margin-top: 12px; cursor: pointer;">
           Authenticate & Sign In
         </button>
       </form>
+
+      <div style="margin-top: 14px; text-align: center;">
+        <button type="button" id="btn-quick-admin-fill" style="background: #334155; color: #38bdf8; border: 1px solid #475569; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">
+          ⚡ Auto-fill Superadmin Credentials
+        </button>
+      </div>
 
       <div style="margin-top: 18px; padding-top: 16px; border-top: 1px dashed #334155; font-size: 11.5px; color: #64748b; line-height: 1.5;">
         <strong>Demo RBAC Accounts:</strong><br>
         • Superadmin: <code>admin</code> / <code>Admin@2026!Master</code><br>
         • Operations: <code>ops_manager</code> / <code>Manager@2026!Pass</code><br>
-        • Finance: <code>finance_lead</code> / <code>Finance@2026!Pass</code>
+        • Finance: <code>finance_lead</code> / <code>Finance@2026!Pass</code><br>
+        <span style="color: #94a3b8;">(Also accepts <code>Admin1</code> or <code>Admin1@new.reserve-hotels.online</code>)</span>
       </div>
     </div>
   </div>
