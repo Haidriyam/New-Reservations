@@ -160,7 +160,8 @@
                     <th>UID</th>
                     <th>Username</th>
                     <th>Balance</th>
-                    <th>Tasks</th>
+                    <th>Tasks & Profit</th>
+                    <th>Tasks Permission</th>
                     <th>Invite Code</th>
                     <th>Invited By</th>
                     <th>Status</th>
@@ -275,6 +276,11 @@
                 <div class="admin-form-group">
                   <label class="admin-form-label">Order Amount (USDT)</label>
                   <input type="number" id="lucky-amount-input" class="admin-form-input" value="315.72" step="0.01" required>
+                </div>
+
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Minus Deficit (USDT, Optional)</label>
+                  <input type="number" id="lucky-minus-input" class="admin-form-input" value="0.00" step="0.01" placeholder="e.g. 50.00 to force 50 deficit">
                 </div>
 
                 <div class="admin-form-group">
@@ -446,9 +452,10 @@
                 <div class="admin-form-group">
                   <label class="admin-form-label">Assigned Role</label>
                   <select id="admin-new-role" class="admin-form-select">
-                    <option value="manager">Manager (User & Order Controls)</option>
+                    <option value="agent">Sub-Admin / Agent (Manage Clients & Orders - No Wallet / Settings Access)</option>
+                    <option value="manager">Operations Manager (Manage Clients & Operations - No Wallet Access)</option>
                     <option value="finance">Finance (Deposits & Withdrawals)</option>
-                    <option value="superadmin">Superadmin (Full Master Access)</option>
+                    <option value="superadmin">Superadmin (Full Master Access including USDT Wallet)</option>
                   </select>
                 </div>
               </div>
@@ -497,13 +504,25 @@
                 <label class="admin-form-label">Default Daily Tasks</label>
                 <input type="number" id="set-daily-tasks" class="admin-form-input">
               </div>
-              <div class="admin-form-group">
-                <label class="admin-form-label">Min Deposit (USDT)</label>
-                <input type="number" id="set-min-dep" class="admin-form-input">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Min Deposit (USDT)</label>
+                  <input type="number" id="set-min-dep" class="admin-form-input">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Max Deposit (USDT)</label>
+                  <input type="number" id="set-max-dep" class="admin-form-input">
+                </div>
               </div>
-              <div class="admin-form-group">
-                <label class="admin-form-label">Min Withdrawal (USDT)</label>
-                <input type="number" id="set-min-with" class="admin-form-input">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Min Withdrawal (USDT)</label>
+                  <input type="number" id="set-min-with" class="admin-form-input">
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Max Withdrawal (USDT)</label>
+                  <input type="number" id="set-max-with" class="admin-form-input">
+                </div>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Telegram Customer Service Link</label>
@@ -568,6 +587,13 @@
             <label class="admin-form-label">Withdrawal PIN</label>
             <input type="password" id="newuser-pin" class="admin-form-input" value="123456" maxlength="6">
           </div>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Task Matching Permission</label>
+          <select id="newuser-tasks-allowed" class="admin-form-select">
+            <option value="1">Allowed (User can start matching immediately)</option>
+            <option value="0">Paused / Stopped (Requires admin approval to start)</option>
+          </select>
         </div>
         <div class="admin-form-group">
           <label class="admin-form-label">Custom Invite Code (Leave blank to auto-generate)</label>
@@ -637,6 +663,13 @@
         <label class="admin-form-label">Max Cycle Profit ($USD)</label>
         <input type="number" id="task-modal-profit" class="admin-form-input" placeholder="10.00" step="0.01" value="10.00">
         <div style="font-size:11px; color:#64748b; margin-top:4px;">Default is 10.00 USD for a 60 task cycle. Commissions scale automatically.</div>
+      </div>
+      <div class="admin-form-group">
+        <label class="admin-form-label">Task Matching Permission</label>
+        <select id="task-modal-allowed" class="admin-form-select">
+          <option value="1">Allowed (User can match tasks)</option>
+          <option value="0">Paused / Stopped (Client cannot match)</option>
+        </select>
       </div>
       <div class="admin-form-group" style="display:flex; align-items:center; gap:8px; margin-top:8px;">
         <input type="checkbox" id="task-modal-reset-cycle" style="accent-color:#ea580c; width:16px; height:16px; cursor:pointer;">

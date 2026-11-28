@@ -132,12 +132,20 @@ function initDatabase() {
     // Column already exists
   }
 
-  // Migration: Ensure max_profit and cycle_profit exist in users table
+  // Migration: Ensure max_profit, cycle_profit, tasks_allowed exist in users table
   try {
     db.exec("ALTER TABLE users ADD COLUMN max_profit REAL DEFAULT 10.00;");
   } catch (e) {}
   try {
     db.exec("ALTER TABLE users ADD COLUMN cycle_profit REAL DEFAULT 0.00;");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN tasks_allowed INTEGER DEFAULT 1;");
+  } catch (e) {}
+
+  // Migration: Ensure lucky_order_triggers has minus_amount
+  try {
+    db.exec("ALTER TABLE lucky_order_triggers ADD COLUMN minus_amount REAL DEFAULT 0;");
   } catch (e) {}
 
   // Seed default settings if empty
@@ -148,7 +156,9 @@ function initDatabase() {
     platform_name: 'Review Robot - xinmingzhi',
     trc20_deposit_address: 'TReaAUXRkicHL95Sangr5Bus3Fje7iq48s',
     min_deposit: '20',
+    max_deposit: '100000',
     min_withdraw: '30',
+    max_withdraw: '50000',
     default_commission_rate: '0.006',
     default_daily_tasks: '60',
     customer_service_url: 'https://t.me/review_robot_support',

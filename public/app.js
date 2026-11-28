@@ -474,20 +474,26 @@ el.btnStartMatching.addEventListener('click', async () => {
     el.btnStartMatching.disabled = false;
     el.matchingBtnText.textContent = 'Start matching';
 
-    // 1. Unfinished Order Prompt
+    // 1. Task Paused / Not Allowed by Admin
+    if (!data.success && data.code === 'TASKS_NOT_ALLOWED') {
+      alert(data.message || 'Task matching is currently paused for your account. Please await administrator approval.');
+      return;
+    }
+
+    // 2. Unfinished Order Prompt
     if (!data.success && data.code === 'UNFINISHED_ORDER') {
       state.unpreparedOrder = data.order;
       el.modalUnfinishedOrder.classList.add('active');
       return;
     }
 
-    // 2. Task Quota Reached or other error
+    // 3. Task Quota Reached or other error
     if (!data.success) {
       alert(data.message || 'Matching failed');
       return;
     }
 
-    // 3. Lucky Order Triggered (Insufficient Balance Prompt)
+    // 4. Lucky Order Triggered (Insufficient Balance Prompt)
     if (data.is_lucky_order && data.insufficient_balance) {
       state.activeLuckyOrder = data;
       el.luckyDiffVal.textContent = data.difference;
@@ -498,7 +504,7 @@ el.btnStartMatching.addEventListener('click', async () => {
       return;
     }
 
-    // 4. Normal Matched Order
+    // 5. Normal Matched Order (or Lucky Order with fulfilled balance)
     if (data.product) {
       state.matchedProduct = data.product;
       el.matchedProductTitle.textContent = data.product.name;
@@ -528,7 +534,8 @@ el.btnStartTrading.addEventListener('click', async () => {
         product_name: state.matchedProduct.name,
         product_image: state.matchedProduct.image_url,
         amount: state.matchedProduct.price,
-        expected_return: state.matchedProduct.expected_return
+        expected_return: state.matchedProduct.expected_return,
+        trigger_id: state.matchedProduct.trigger_id || undefined
       })
     });
 
@@ -626,14 +633,23 @@ el.btnCopyInvite.addEventListener('click', () => {
 // 3. RECHARGE LOGIC (Video 2)
 // -------------------------------------------------------------
 async function loadRechargeInfo() {
-  const data = await api('/recharge/info');
-  if (data.success) {
+  const [data, config] = await Promise.all([
+    api('/recharge/info'),
+    api('/system/public-config')
+  ]);
+  if (config && config.success) {
+    state.publicConfig = config;
+  }
+  if (data && data.success) {
     el.rechargeAddressText.textContent = data.deposit_address;
     if (data.qr_code) {
       el.rechargeQrImg.src = data.qr_code;
     }
-    if (data.instruction) {
-      document.getElementById('recharge-instruction-text').textContent = data.instruction;
+    const minDep = state.publicConfig?.min_deposit || 20;
+    const maxDep = state.publicConfig?.max_deposit || 100000;
+    const instrEl = document.getElementById('recharge-instruction-text');
+    if (instrEl) {
+      instrEl.textContent = `The deposit address only supports TRC20-USDT. Range: ${minDep} - ${maxDep} USDT`;
     }
   }
 }
@@ -659,8 +675,11 @@ el.btnIRecharged.addEventListener('click', async () => {
   const txid = el.depositTxidInput.value;
   const file = el.depositProofFile.files[0];
 
-  if (!amount || parseFloat(amount) < 20) {
-    alert('Please enter a valid deposit amount of at least 20 USDT.');
+  const minDep = state.publicConfig?.min_deposit || 20;
+  const maxDep = state.publicConfig?.max_deposit || 100000;
+  const amtNum = parseFloat(amount);
+  if (!amount || isNaN(amtNum) || amtNum < minDep || (maxDep > 0 && amtNum > maxDep)) {
+    alert(`Please enter a valid deposit amount between ${minDep} and ${maxDep} USDT.`);
     return;
   }
 
@@ -822,8 +841,11 @@ el.btnSubmitWithdraw.addEventListener('click', async () => {
   const address = el.withdrawAddressInput.value;
   const pin = el.withdrawPinInput.value;
 
-  if (!amount || parseFloat(amount) < 10) {
-    alert('Please enter a valid withdrawal amount.');
+  const minWith = state.publicConfig?.min_withdraw || 30;
+  const maxWith = state.publicConfig?.max_withdraw || 50000;
+  const amtNum = parseFloat(amount);
+  if (!amount || isNaN(amtNum) || amtNum < minWith || (maxWith > 0 && amtNum > maxWith)) {
+    alert(`Please enter a valid withdrawal amount between ${minWith} and ${maxWith} USDT.`);
     return;
   }
   if (!address) {

