@@ -592,6 +592,34 @@ async function loadTeamData() {
     el.totalPeopleVal.textContent = data.total_people;
     el.myInviteCodeDisplay.textContent = data.invite_code;
 
+    // Update Partner Team UI
+    const badgeEl = document.getElementById('partner-status-badge');
+    const boxEl = document.getElementById('partner-active-box');
+    const formEl = document.getElementById('partner-bind-form');
+    const nameEl = document.getElementById('partner-username-display');
+    const profLabel = document.getElementById('profile-partner-label');
+
+    if (data.is_bound && data.bound_partner) {
+      if (badgeEl) {
+        badgeEl.textContent = '✓ Linked Team';
+        badgeEl.style.background = '#dcfce7';
+        badgeEl.style.color = '#15803d';
+      }
+      if (nameEl) nameEl.textContent = data.bound_partner;
+      if (boxEl) boxEl.style.display = 'block';
+      if (formEl) formEl.style.display = 'none';
+      if (profLabel) profLabel.textContent = `${data.bound_partner} ›`;
+    } else {
+      if (badgeEl) {
+        badgeEl.textContent = 'Not Bound';
+        badgeEl.style.background = '#f1f5f9';
+        badgeEl.style.color = '#64748b';
+      }
+      if (boxEl) boxEl.style.display = 'none';
+      if (formEl) formEl.style.display = 'flex';
+      if (profLabel) profLabel.textContent = 'Not Bound ›';
+    }
+
     // Render team member table
     if (data.team && data.team.length > 0) {
       el.teamTableBody.innerHTML = data.team.map(m => `
@@ -606,6 +634,46 @@ async function loadTeamData() {
     }
   }
 }
+
+// Bind Partner Team Button
+document.getElementById('btn-bind-partner')?.addEventListener('click', async () => {
+  const inputEl = document.getElementById('input-bind-partner');
+  const target = inputEl ? inputEl.value.trim() : '';
+  if (!target) {
+    alert('Please enter a partner username or invite code.');
+    return;
+  }
+  const data = await api('/user/bind-partner', {
+    method: 'POST',
+    body: JSON.stringify({ partner_username: target })
+  });
+  if (data.success) {
+    alert(data.message);
+    if (inputEl) inputEl.value = '';
+    loadTeamData();
+  } else {
+    alert(data.message || 'Failed to bind partner account.');
+  }
+});
+
+// Unbind Partner Team Button
+document.getElementById('btn-unbind-partner')?.addEventListener('click', async () => {
+  if (!confirm('Are you sure you want to unlink your partner team?')) return;
+  const data = await api('/user/unbind-partner', { method: 'POST' });
+  if (data.success) {
+    alert(data.message);
+    loadTeamData();
+  } else {
+    alert(data.message || 'Failed to unbind partner.');
+  }
+});
+
+// Menu item click to navigate to partner team
+document.getElementById('menu-btn-bind-partner')?.addEventListener('click', () => {
+  switchTab('team');
+  const inp = document.getElementById('input-bind-partner');
+  if (inp) inp.focus();
+});
 
 // "Receive" Commission Button
 el.btnReceiveCommission.addEventListener('click', async () => {
@@ -798,6 +866,11 @@ async function loadUserProfile() {
     if (deskBal) deskBal.textContent = parseFloat(data.user.balance).toFixed(2);
     const deskUser = document.getElementById('desktop-header-username');
     if (deskUser) deskUser.textContent = data.user.username;
+
+    const partnerLabel = document.getElementById('profile-partner-label');
+    if (partnerLabel) {
+      partnerLabel.textContent = data.user.bound_partner_username ? `${data.user.bound_partner_username} ›` : 'Not Bound ›';
+    }
   }
 }
 

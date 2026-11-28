@@ -279,6 +279,23 @@
                 <button class="btn-receive" id="btn-receive-commission">Receive</button>
               </div>
 
+              <!-- 2-Person Partner Team Binding Card -->
+              <div class="team-partner-card" style="background:#fff; border-radius:14px; padding:16px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.05); border:1px solid #fed7aa;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <strong style="font-size:14px; color:#c2410c;">👥 2-Person Partner Team</strong>
+                  <span id="partner-status-badge" style="font-size:11px; padding:3px 8px; border-radius:12px; background:#f1f5f9; color:#64748b; font-weight:600;">Not Bound</span>
+                </div>
+                <div id="partner-active-box" style="display:none; font-size:13px; color:#334155; margin-bottom:8px;">
+                  <div>Linked Partner: <strong id="partner-username-display" style="color:#ea580c; font-size:14px;">-</strong></div>
+                  <div style="font-size:11.5px; color:#6b7280; margin-top:4px;">When either partner completes their 60 tasks, 10% of their total cycle profit is automatically credited to the other partner!</div>
+                  <button id="btn-unbind-partner" style="margin-top:8px; padding:4px 10px; font-size:11px; background:#fee2e2; color:#ef4444; border:1px solid #fca5a5; border-radius:6px; cursor:pointer;">Unlink Partner</button>
+                </div>
+                <div id="partner-bind-form" style="display:flex; gap:8px;">
+                  <input type="text" id="input-bind-partner" placeholder="Partner username or invite code" style="flex:1; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;">
+                  <button id="btn-bind-partner" style="padding:8px 16px; background:#ea580c; color:#fff; border:none; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer;">Bind Team</button>
+                </div>
+              </div>
+
               <div class="invite-share-card">
                 <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 6px;">My Referral Invitation Code</div>
                 <p style="font-size: 12.5px; color: #64748b; margin-bottom: 12px;">Share your personal code with downline team members to receive commissions.</p>
@@ -587,6 +604,10 @@
                 <div class="menu-item-row" id="menu-btn-trc20">
                   <span>🔗 Bind Receiving TRC-20 Address</span>
                   <span>›</span>
+                </div>
+                <div class="menu-item-row" id="menu-btn-bind-partner">
+                  <span>👥 Bind Partner Account (2-Person Team)</span>
+                  <span id="profile-partner-label" style="font-size:12px; color:#ea580c; font-weight:600;">Not Bound ›</span>
                 </div>
                 <div class="menu-item-row" id="menu-btn-support">
                   <span>💬 24/7 Online Customer Service</span>

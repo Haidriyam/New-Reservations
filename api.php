@@ -149,6 +149,12 @@ try {
 try {
     $db->exec("ALTER TABLE users ADD COLUMN tasks_allowed INTEGER DEFAULT 1;");
 } catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE users ADD COLUMN bound_partner_id INTEGER DEFAULT NULL;");
+} catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE users ADD COLUMN bound_partner_username TEXT DEFAULT NULL;");
+} catch (Exception $e) {}
 
 // Migration: Ensure lucky_order_triggers has trigger_type, target_task_number, minus_amount
 try {
@@ -521,6 +527,79 @@ try {
         exit;
     }
 
+    // ----------------- PARTNER TEAM: BIND 2 ACCOUNTS -----------------
+    if ($method === 'POST' && $route === '/user/bind-partner') {
+        $user = requireUserAuth($db, $JWT_SECRET);
+        $body = getJsonInput();
+        $target = trim($body['partner_username'] ?? $body['partner_code'] ?? '');
+
+        if (empty($target)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Please enter partner username or invite code.']);
+            exit;
+        }
+
+        if (strcasecmp($target, $user['username']) === 0 || strcasecmp($target, $user['invite_code']) === 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'You cannot bind your own account as a partner.']);
+            exit;
+        }
+
+        $stmt = $db->prepare("SELECT id, username, bound_partner_id, bound_partner_username FROM users WHERE LOWER(username) = LOWER(?) OR UPPER(invite_code) = UPPER(?)");
+        $stmt->execute([$target, $target]);
+        $partner = $stmt->fetch();
+
+        if (!$partner) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => "User '{$target}' not found. Please verify the username."]);
+            exit;
+        }
+
+        if (!empty($partner['bound_partner_id']) && intval($partner['bound_partner_id']) !== intval($user['id'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => "User '{$partner['username']}' is already paired with another account ({$partner['bound_partner_username']})."]);
+            exit;
+        }
+
+        // Mutual 2-account link
+        $db->prepare("UPDATE users SET bound_partner_id = ?, bound_partner_username = ? WHERE id = ?")
+           ->execute([$partner['id'], $partner['username'], $user['id']]);
+        $db->prepare("UPDATE users SET bound_partner_id = ?, bound_partner_username = ? WHERE id = ?")
+           ->execute([$user['id'], $user['username'], $partner['id']]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Successfully bound with {$partner['username']}! You are now a 2-person team. When either account completes 60 tasks, 10% profit will be sent to the other.",
+            'partner_username' => $partner['username']
+        ]);
+        exit;
+    }
+
+    if ($method === 'POST' && $route === '/user/unbind-partner') {
+        $user = requireUserAuth($db, $JWT_SECRET);
+        if (!empty($user['bound_partner_id'])) {
+            $oldPartnerId = intval($user['bound_partner_id']);
+            $db->prepare("UPDATE users SET bound_partner_id = NULL, bound_partner_username = NULL WHERE id = ?")->execute([$oldPartnerId]);
+        }
+        $db->prepare("UPDATE users SET bound_partner_id = NULL, bound_partner_username = NULL WHERE id = ?")->execute([$user['id']]);
+        echo json_encode(['success' => true, 'message' => 'Partner account unbound successfully.']);
+        exit;
+    }
+
+    if ($method === 'GET' && $route === '/user/partner-info') {
+        $user = requireUserAuth($db, $JWT_SECRET);
+        $partnerName = $user['bound_partner_username'] ?? null;
+        $unclaimed = floatval($user['team_commission_unclaimed'] ?? 0.00);
+
+        echo json_encode([
+            'success' => true,
+            'is_bound' => !empty($partnerName),
+            'partner_username' => $partnerName,
+            'unclaimed_commission' => $unclaimed
+        ]);
+        exit;
+    }
+
     // ----------------- TRADE: STATUS -----------------
     if ($method === 'GET' && $route === '/trade/status') {
         $user = requireUserAuth($db, $JWT_SECRET);
@@ -705,6 +784,25 @@ try {
             $db->prepare("UPDATE users SET team_commission_unclaimed = team_commission_unclaimed + ? WHERE username = ?")->execute([$refComm, $user['invited_by']]);
         }
 
+        // 2-Account Partner Team Bonus: When user completes full cycle (e.g. 60 tasks), 10% of their total cycle profit is sent to partner's account
+        $maxDailyQuota = intval($user['max_daily_tasks'] ?? 60);
+        if ($newTasks >= $maxDailyQuota && !empty($user['bound_partner_id'])) {
+            $partnerId = intval($user['bound_partner_id']);
+            $profitBasis = floatval($newCycleProfit);
+            if ($profitBasis <= 0) {
+                $profitBasis = floatval($user['max_profit'] ?? 10.00);
+            }
+            $partnerBonus = round($profitBasis * 0.10, 2);
+            if ($partnerBonus > 0) {
+                $db->prepare("UPDATE users SET team_commission_unclaimed = team_commission_unclaimed + ? WHERE id = ?")
+                   ->execute([$partnerBonus, $partnerId]);
+                $rewardOrderNo = 'REW' . date('YmdHis') . random_int(100, 999);
+                $rewardTitle = "Partner Team 10% Profit Bonus (Partner {$user['username']} completed {$maxDailyQuota} tasks)";
+                $db->prepare("INSERT INTO orders (order_no, user_id, product_name, product_image, amount, commission, status, is_lucky_order, created_at) VALUES (?, ?, ?, '', 0, ?, 'completed', 0, ?)")
+                   ->execute([$rewardOrderNo, $partnerId, $rewardTitle, $partnerBonus, $now]);
+            }
+        }
+
         echo json_encode([
             'success' => true,
             'message' => 'Order submitted successfully!',
@@ -736,6 +834,8 @@ try {
             'commission' => floatval($user['team_commission_unclaimed'] ?? 0),
             'total_people' => count($team),
             'invite_code' => $user['invite_code'],
+            'bound_partner' => $user['bound_partner_username'] ?? null,
+            'is_bound' => !empty($user['bound_partner_username']),
             'team' => $team
         ]);
         exit;
@@ -937,7 +1037,7 @@ try {
     // Admin Users List & Creation
     if ($method === 'GET' && $route === '/admin/users') {
         requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
-        $stmt = $db->query("SELECT id, username, balance, frozen_balance, completed_tasks, max_daily_tasks, max_profit, cycle_profit, vip_level, invite_code, invited_by, status, tasks_allowed, created_at FROM users ORDER BY id DESC");
+        $stmt = $db->query("SELECT id, username, balance, frozen_balance, team_commission_unclaimed, completed_tasks, max_daily_tasks, max_profit, cycle_profit, vip_level, invite_code, invited_by, status, tasks_allowed, bound_partner_id, bound_partner_username, created_at FROM users ORDER BY id DESC");
         echo json_encode(['success' => true, 'users' => $stmt->fetchAll()]);
         exit;
     }
@@ -1047,6 +1147,83 @@ try {
             'tasks_allowed' => $newStatus,
             'message' => $newStatus ? "Task matching started/allowed for user!" : "Task matching stopped/paused for user!"
         ]);
+        exit;
+    }
+
+    // Admin Bind Partner to User
+    if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/bind-partner$#', $route, $m)) {
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
+        $uid = intval($m[1]);
+        $body = getJsonInput();
+        $target = trim($body['partner_username'] ?? '');
+
+        $currStmt = $db->prepare("SELECT id, username, bound_partner_id FROM users WHERE id = ?");
+        $currStmt->execute([$uid]);
+        $curr = $currStmt->fetch();
+        if (!$curr) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'User not found.']);
+            exit;
+        }
+
+        if (empty($target)) {
+            // Unbind
+            if (!empty($curr['bound_partner_id'])) {
+                $db->prepare("UPDATE users SET bound_partner_id = NULL, bound_partner_username = NULL WHERE id = ?")->execute([$curr['bound_partner_id']]);
+            }
+            $db->prepare("UPDATE users SET bound_partner_id = NULL, bound_partner_username = NULL WHERE id = ?")->execute([$uid]);
+            echo json_encode(['success' => true, 'message' => "Partner unbound for {$curr['username']}."]);
+            exit;
+        }
+
+        $partnerStmt = $db->prepare("SELECT id, username, bound_partner_id FROM users WHERE LOWER(username) = LOWER(?)");
+        $partnerStmt->execute([$target]);
+        $p = $partnerStmt->fetch();
+        if (!$p) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => "Partner user '{$target}' not found."]);
+            exit;
+        }
+        if ($p['id'] == $uid) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Cannot bind user with themselves.']);
+            exit;
+        }
+
+        // Mutual bind
+        $db->prepare("UPDATE users SET bound_partner_id = ?, bound_partner_username = ? WHERE id = ?")->execute([$p['id'], $p['username'], $uid]);
+        $db->prepare("UPDATE users SET bound_partner_id = ?, bound_partner_username = ? WHERE id = ?")->execute([$uid, $curr['username'], $p['id']]);
+
+        echo json_encode(['success' => true, 'message' => "Users {$curr['username']} and {$p['username']} successfully bound as a 2-person team!"]);
+        exit;
+    }
+
+    // Admin Credit Partner Commission (Natural Appearance)
+    if ($method === 'POST' && preg_match('#^/admin/users/(\d+)/credit-commission$#', $route, $m)) {
+        requireAdminAuth($db, $JWT_SECRET, ['superadmin', 'manager', 'agent']);
+        $uid = intval($m[1]);
+        $body = getJsonInput();
+        $amt = floatval($body['amount'] ?? 0);
+        $userStmt = $db->prepare("SELECT id, username, bound_partner_username FROM users WHERE id = ?");
+        $userStmt->execute([$uid]);
+        $user = $userStmt->fetch();
+
+        if ($amt <= 0 || !$user) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid amount or user not found.']);
+            exit;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $db->prepare("UPDATE users SET team_commission_unclaimed = team_commission_unclaimed + ? WHERE id = ?")->execute([$amt, $uid]);
+
+        // Natural log
+        $partnerLabel = $user['bound_partner_username'] ? "Partner {$user['bound_partner_username']}" : "VIP Partner Team";
+        $logNo = 'REW' . date('YmdHis') . random_int(100, 999);
+        $db->prepare("INSERT INTO orders (order_no, user_id, product_name, product_image, amount, commission, status, is_lucky_order, created_at) VALUES (?, ?, ?, '', 0, ?, 'completed', 0, ?)")
+           ->execute([$logNo, $uid, "VIP Team 60-Task Cycle Completion Reward (10% Bonus from {$partnerLabel})", $amt, $now]);
+
+        echo json_encode(['success' => true, 'message' => "Credited {$amt} USDT partner commission to {$user['username']}!"]);
         exit;
     }
 

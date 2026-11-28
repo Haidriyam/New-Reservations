@@ -142,6 +142,12 @@ function initDatabase() {
   try {
     db.exec("ALTER TABLE users ADD COLUMN tasks_allowed INTEGER DEFAULT 1;");
   } catch (e) {}
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN bound_partner_id INTEGER DEFAULT NULL;");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN bound_partner_username TEXT DEFAULT NULL;");
+  } catch (e) {}
 
   // Migration: Ensure lucky_order_triggers has minus_amount
   try {

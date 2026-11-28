@@ -198,6 +198,16 @@ async function loadUsersTable() {
             ${u.tasks_allowed != 0 ? '⏹ Pause Tasks' : '▶ Start Tasks'}
           </button>
         </td>
+        <td>
+          ${u.bound_partner_username ? `
+            <div style="font-weight:700; color:#10b981; font-size:13px;">🔗 ${u.bound_partner_username}</div>
+            <button class="btn-sm btn-secondary-sm" style="margin-top:4px; font-size:10px; padding:2px 6px;" onclick="promptBindPartner(${u.id}, '${u.username}', '${u.bound_partner_username}')">Change</button>
+          ` : `
+            <span style="color:#64748b; font-size:12px;">None</span>
+            <button class="btn-sm btn-primary-sm" style="margin-top:4px; font-size:10px; padding:2px 6px; display:block;" onclick="promptBindPartner(${u.id}, '${u.username}', '')">+ Bind</button>
+          `}
+          ${parseFloat(u.team_commission_unclaimed || 0) > 0 ? `<div style="font-size:10px; color:#f59e0b; font-weight:700; margin-top:3px;">Unclaimed: $${parseFloat(u.team_commission_unclaimed).toFixed(2)}</div>` : ''}
+        </td>
         <td><code style="color:#ea580c; font-weight:700;">${u.invite_code}</code></td>
         <td>${u.invited_by ? `<code style="color:#94a3b8;">${u.invited_by}</code>` : '<span style="color:#64748b;">Direct</span>'}</td>
         <td>
@@ -206,6 +216,7 @@ async function loadUsersTable() {
         <td>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             <button class="btn-sm btn-primary-sm" onclick="openAdjustBalModal(${u.id}, '${u.username}', ${u.balance})">± Bal</button>
+            <button class="btn-sm btn-success-sm" style="background:#10b981; color:#fff;" onclick="openCreditCommModal(${u.id}, '${u.username}')">+ Comm</button>
             <button class="btn-sm btn-warning-sm" style="background:#f59e0b; color:#fff;" onclick="prepareLuckyOrderForUser(${u.id})">✨ Lucky</button>
             <button class="btn-sm ${u.status === 'active' ? 'btn-secondary-sm' : 'btn-success-sm'}" onclick="toggleUserStatus(${u.id})">
               ${u.status === 'active' ? 'Freeze' : 'Unfreeze'}
@@ -228,6 +239,49 @@ window.toggleUserTasks = async function(id) {
     alert(data.message || 'Failed to toggle task permission.');
   }
 };
+
+// Bind / Unbind Partner
+window.promptBindPartner = async function(userId, username, currentPartner) {
+  const target = prompt(`Enter partner username to link with "${username}" (leave blank to unbind):`, currentPartner || '');
+  if (target === null) return;
+  const data = await adminApi(`/users/${userId}/bind-partner`, {
+    method: 'POST',
+    body: JSON.stringify({ partner_username: target.trim() })
+  });
+  if (data.success) {
+    alert(data.message);
+    loadUsersTable();
+  } else {
+    alert(data.message || 'Failed to bind partner.');
+  }
+};
+
+// Credit Partner Commission Modal
+window.openCreditCommModal = function(userId, username) {
+  adminState.activeUserId = userId;
+  document.getElementById('comm-modal-user').textContent = username;
+  document.getElementById('comm-modal-amount').value = '1.00';
+  document.getElementById('modal-credit-commission').classList.add('active');
+};
+
+document.getElementById('btn-confirm-credit-comm')?.addEventListener('click', async () => {
+  const amt = document.getElementById('comm-modal-amount').value;
+  if (!amt || parseFloat(amt) <= 0) {
+    alert('Please enter a valid commission amount.');
+    return;
+  }
+  const data = await adminApi(`/users/${adminState.activeUserId}/credit-commission`, {
+    method: 'POST',
+    body: JSON.stringify({ amount: parseFloat(amt) })
+  });
+  if (data.success) {
+    alert(data.message);
+    closeModal('modal-credit-commission');
+    loadUsersTable();
+  } else {
+    alert(data.message || 'Failed to credit commission.');
+  }
+});
 
 // Add User Modal
 window.openAddUserModal = function() {

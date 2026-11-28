@@ -442,6 +442,23 @@ app.post('/api/trade/submit-order', authMiddleware, (req, res) => {
       }
     }
 
+    // Partner 2-Account Team 10% Bonus on 60 Tasks Completion
+    if (newCompleted >= user.max_daily_tasks && user.bound_partner_id) {
+      const partner = db.prepare('SELECT id, username FROM users WHERE id = ?').get(user.bound_partner_id);
+      if (partner) {
+        const cycleProfit = +(user.cycle_profit || user.max_profit || 10.00);
+        const partnerBonus = +(cycleProfit * 0.10).toFixed(2);
+        if (partnerBonus > 0) {
+          db.prepare('UPDATE users SET team_commission_unclaimed = team_commission_unclaimed + ? WHERE id = ?').run(partnerBonus, partner.id);
+          const rewOrderNo = 'REW' + Date.now() + Math.floor(Math.random() * 899 + 100);
+          db.prepare(`
+            INSERT INTO orders (order_no, user_id, product_id, product_name, product_image, amount, commission, status, is_lucky_order, difference_amount, created_at, completed_at)
+            VALUES (?, ?, 0, ?, '', 0, ?, 'completed', 0, 0, ?, ?)
+          `).run(rewOrderNo, partner.id, `Partner Team 10% Profit Bonus (Partner ${user.username} completed ${user.max_daily_tasks} tasks)`, partnerBonus, nowFormatted, nowFormatted);
+        }
+      }
+    }
+
     res.json({
       success: true,
       message: 'Successful operation',
